@@ -1,0 +1,110 @@
+diff --git a/HabboHotel/Items/Wired/Configuration/WiredFurniSnapshot.cs b/HabboHotel/Items/Wired/Configuration/WiredFurniSnapshot.cs
+index 0a3312df..f22cc05b 100644
+--- a/HabboHotel/Items/Wired/Configuration/WiredFurniSnapshot.cs
++++ b/HabboHotel/Items/Wired/Configuration/WiredFurniSnapshot.cs
+@@ -2,6 +2,12 @@ namespace Plus.HabboHotel.Items.Wired.Configuration;
+ 
+ public sealed record WiredFurniSnapshot(uint ItemId, uint DefinitionId, int X, int Y, double Z, int Rotation, string State)
+ {
++    // Arcturus snapshot effects use a single space to mean "do not restore state".
++    // An explicit flag preserves that behavior without changing literal-space snapshots
++    // created by Plus. Position and rotation still restore normally.
++    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingDefault)]
++    public bool SkipStateRestore { get; init; }
++
+     [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+     public WiredWallSnapshot? Wall { get; init; }
+ }
+diff --git a/HabboHotel/Items/Wired/Modern/Actions/WiredMovementActions.cs b/HabboHotel/Items/Wired/Modern/Actions/WiredMovementActions.cs
+index 821054b8..9c26d283 100644
+--- a/HabboHotel/Items/Wired/Modern/Actions/WiredMovementActions.cs
++++ b/HabboHotel/Items/Wired/Modern/Actions/WiredMovementActions.cs
+@@ -171,7 +171,7 @@ public sealed class WiredMovementActions(Random? random = null)
+                     var snapshot = configuration.Snapshots.FirstOrDefault(entry => entry.ItemId == item.Id);
+ 
+                     if (snapshot == null) {
+-                        if (only != null && Param(0) == 1 && item.IsFloorItem) {
++                        if (only != null && !only.SkipStateRestore && Param(0) == 1 && item.IsFloorItem) {
+                             if (toggleState != null) {
+                                 affected |= toggleState(item, current => string.Equals(current, only.State, StringComparison.Ordinal) ? null : only.State);
+                             }
+@@ -196,10 +196,10 @@ public sealed class WiredMovementActions(Random? random = null)
+                         continue;
+                     }
+ 
+-                    if (Param(0) == 1 && toggleState != null) {
++                    if (!snapshot.SkipStateRestore && Param(0) == 1 && toggleState != null) {
+                         affected |= toggleState(item, current => string.Equals(current, snapshot.State, StringComparison.Ordinal) ? null : snapshot.State);
+                     }
+-                    else if (Param(0) == 1 && !string.Equals(item.LegacyDataString, snapshot.State, StringComparison.Ordinal)) {
++                    else if (!snapshot.SkipStateRestore && Param(0) == 1 && !string.Equals(item.LegacyDataString, snapshot.State, StringComparison.Ordinal)) {
+                         setState(item, snapshot.State);
+                         affected = true;
+                     }
+diff --git a/Plus.Tests/ArcturusWiredSnapshotTests.cs b/Plus.Tests/ArcturusWiredSnapshotTests.cs
+new file mode 100644
+index 00000000..e6664c78
+--- /dev/null
++++ b/Plus.Tests/ArcturusWiredSnapshotTests.cs
+@@ -0,0 +1,61 @@
++using System.Text.Json;
++using Plus.HabboHotel.Items;
++using Plus.HabboHotel.Items.Wired.Configuration;
++using Plus.HabboHotel.Items.Wired.Modern.Actions;
++using Plus.HabboHotel.Users.Inventory.Furniture;
++using Xunit;
++
++namespace Plus.Tests;
++
++public class ArcturusWiredSnapshotTests
++{
++    [Theory]
++    [InlineData(false, false)]
++    [InlineData(true, false)]
++    [InlineData(false, true)]
++    [InlineData(true, true)]
++    public void ImportedSkipStateKeepsStateButRestoresPosition(bool skipState, bool atomicState)
++    {
++        var item = new Item { Id = 7, Definition = new ItemDefinition { Id = 1, Type = ItemType.Floor, ProductType = "s" } };
++        var native = new WiredNativeEditorConfiguration
++        {
++            Category = WiredBoxCategory.Action, NativeCode = 3, OwnedIntParams = [1, 1, 1, 0],
++            FurniSourceTypes = [100], PrimaryItems = [new(7, false)], Delay = 0,
++            SavedState = new() { Snapshots = [new(7, 1, 4, 5, 1.5, 2, " ") { SkipStateRestore = skipState }] }
++        };
++        var restored = JsonSerializer.Deserialize<WiredNativeEditorConfiguration>(JsonSerializer.Serialize(native))!;
++        Assert.Equal(skipState, restored.SavedState.Snapshots[0].SkipStateRestore);
++        Assert.True(WiredBoxRegistry.TryGet("wf_act_match_to_sshot", out var descriptor));
++        Assert.True(WiredNativeEditorProjection.TryCompile(10, descriptor, restored, out var configuration));
++        var writes = 0;
++        (int, int, int)? moved = null;
++        var action = new WiredMovementActions();
++        Assert.True(action.Execute("wf_act_match_to_sshot", configuration, [item], [], [],
++            (_, x, y, rotation, _) => { moved = (x, y, rotation); return true; },
++            (_, _, _, _, _) => false,
++            (_, _) => writes++, atomicState ? (_, change) => { Assert.Equal(" ", change("2")); writes++; return true; } : null));
++        Assert.Equal(skipState ? 0 : 1, writes);
++        Assert.Equal((4, 5, 2), moved);
++    }
++    [Theory]
++    [InlineData(false)]
++    [InlineData(true)]
++    public void SkipStateAlsoAppliesToSingleSnapshotFallback(bool skipState)
++    {
++        var item = new Item { Id = 8, Definition = new ItemDefinition { Id = 1, Type = ItemType.Floor, ProductType = "s" } };
++        var native = new WiredNativeEditorConfiguration
++        {
++            Category = WiredBoxCategory.Action, NativeCode = 3, OwnedIntParams = [1, 0, 0, 0],
++            FurniSourceTypes = [100], PrimaryItems = [new(8, false)], Delay = 0,
++            SavedState = new() { Snapshots = [new(7, 1, 4, 5, 1.5, 2, " ") { SkipStateRestore = skipState }] }
++        };
++        Assert.True(WiredBoxRegistry.TryGet("wf_act_match_to_sshot", out var descriptor));
++        Assert.True(WiredNativeEditorProjection.TryCompile(10, descriptor, native, out var configuration));
++        var writes = 0;
++        var changed = new WiredMovementActions().Execute("wf_act_match_to_sshot", configuration, [item], [], [],
++            (_, _, _, _, _) => throw new InvalidOperationException("No position snapshot exists for this item"),
++            (_, _, _, _, _) => false, (_, _) => writes++);
++        Assert.Equal(!skipState, changed);
++        Assert.Equal(skipState ? 0 : 1, writes);
++    }
++}

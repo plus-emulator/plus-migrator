@@ -19,6 +19,10 @@ pub enum Flavor {
 }
 
 pub struct Ctx {
+    pub validate_only: bool,
+    pub interaction_coverage: OnceLock<serde_json::Value>,
+    pub source_counts: OnceLock<std::collections::BTreeMap<String, i64>>,
+    pub wired_validation: Mutex<Vec<serde_json::Value>>,
     pub src: Pool,
     pub dst: Pool,
     pub flavor: Flavor,
@@ -40,12 +44,28 @@ impl Ctx {
     }
 
     pub async fn writer(&self, table: &str, columns: &[&str]) -> Result<Writer> {
-        Writer::open(&self.dst, &self.dst_schema, table, columns, false).await
+        Writer::open(
+            &self.dst,
+            &self.dst_schema,
+            table,
+            columns,
+            false,
+            self.validate_only,
+        )
+        .await
     }
 
     /// Writer that skips rows whose key already exists (reference data).
     pub async fn writer_ignore(&self, table: &str, columns: &[&str]) -> Result<Writer> {
-        Writer::open(&self.dst, &self.dst_schema, table, columns, true).await
+        Writer::open(
+            &self.dst,
+            &self.dst_schema,
+            table,
+            columns,
+            true,
+            self.validate_only,
+        )
+        .await
     }
 
     pub fn note(&self, msg: impl Into<String>) {
@@ -64,13 +84,20 @@ pub struct Step {
 
 macro_rules! step {
     ($name:literal, $phase:literal, $f:path) => {
-        $crate::context::Step { name: $name, phase: $phase, run: |ctx| Box::pin($f(ctx)) }
+        $crate::context::Step {
+            name: $name,
+            phase: $phase,
+            run: |ctx| Box::pin($f(ctx)),
+        }
     };
 }
 pub(crate) use step;
 
 pub async fn run_steps(ctx: Arc<Ctx>, steps: Vec<Step>, only: &[String]) -> Result<()> {
-    let steps: Vec<Step> = steps.into_iter().filter(|s| only.is_empty() || only.iter().any(|o| o == s.name)).collect();
+    let steps: Vec<Step> = steps
+        .into_iter()
+        .filter(|s| only.is_empty() || only.iter().any(|o| o == s.name))
+        .collect();
     let mut phases: Vec<u8> = steps.iter().map(|s| s.phase).collect();
     phases.sort_unstable();
     phases.dedup();
@@ -88,12 +115,16 @@ pub async fn run_steps(ctx: Arc<Ctx>, steps: Vec<Step>, only: &[String]) -> Resu
                 r
             });
         }
-        let mut failed = false;
+        let mut errors = Vec::new();
         while let Some(r) = set.join_next().await {
-            failed |= !matches!(r, Ok(Ok(())));
+            match r {
+                Ok(Ok(())) => {}
+                Ok(Err(e)) => errors.push(format!("{e:#}")),
+                Err(e) => errors.push(e.to_string()),
+            }
         }
-        if failed {
-            anyhow::bail!("migration stopped after a failed step");
+        if !errors.is_empty() {
+            anyhow::bail!("migration stopped: {}", errors.join("; "));
         }
     }
     Ok(())

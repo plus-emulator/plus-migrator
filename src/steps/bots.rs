@@ -5,11 +5,26 @@ use std::sync::Arc;
 use anyhow::Result;
 
 use crate::context::Ctx;
-use crate::db::{RowStream, b, i, s, unix_dt};
+use crate::db::{RowStream, b, f, i, s, unix_dt};
 
 const BOT_COLUMNS: &[&str] = &[
-    "id", "room_id", "user_id", "ai_type", "name", "motto", "look", "x", "y", "z", "rotation", "walk_mode", "gender",
-    "automatic_chat", "speaking_interval", "mix_sentences", "chat_bubble",
+    "id",
+    "room_id",
+    "user_id",
+    "ai_type",
+    "name",
+    "motto",
+    "look",
+    "x",
+    "y",
+    "z",
+    "rotation",
+    "walk_mode",
+    "gender",
+    "automatic_chat",
+    "speaking_interval",
+    "mix_sentences",
+    "chat_bubble",
 ];
 
 pub async fn run(ctx: Arc<Ctx>) -> Result<()> {
@@ -19,10 +34,18 @@ pub async fn run(ctx: Arc<Ctx>) -> Result<()> {
     let speech = ctx.writer("bots_speech", &["bot_id", "text"]).await?;
 
     if ctx.has_src("bots") {
-        let mut rows = RowStream::open(&ctx.src, "SELECT t.* FROM bots t JOIN users u ON u.id = t.user_id").await?;
+        let mut rows = RowStream::open(
+            &ctx.src,
+            "SELECT t.* FROM bots t JOIN users u ON u.id = t.user_id",
+        )
+        .await?;
         while let Some(r) = rows.next().await? {
             let id = r.i64("id");
-            let ai = if r.str("type").eq_ignore_ascii_case("bartender") { "bartender" } else { "generic" };
+            let ai = if r.str("type").eq_ignore_ascii_case("bartender") {
+                "bartender"
+            } else {
+                "generic"
+            };
             w.sink
                 .send(vec![
                     i(id),
@@ -34,18 +57,35 @@ pub async fn run(ctx: Arc<Ctx>) -> Result<()> {
                     s(r.str("figure")),
                     i(r.i64("x")),
                     i(r.i64("y")),
-                    i(r.f64("z").round() as i64),
+                    f(r.f64("z")),
                     i(r.i64("rot")),
-                    s(if r.bool("freeroam") { "freeroam" } else { "stand" }),
-                    s(if r.str("gender").eq_ignore_ascii_case("f") { "F" } else { "M" }),
+                    s(if r.bool("freeroam") {
+                        "freeroam"
+                    } else {
+                        "stand"
+                    }),
+                    s(if r.str("gender").eq_ignore_ascii_case("f") {
+                        "F"
+                    } else {
+                        "M"
+                    }),
                     s(if r.bool("chat_auto") { "true" } else { "false" }),
                     i(r.i64("chat_delay").max(1)),
                     b(r.bool("chat_random")),
-                    i(if r.is_null("bubble_id") { 2 } else { r.i64("bubble_id") }),
+                    i(if r.is_null("bubble_id") {
+                        2
+                    } else {
+                        r.i64("bubble_id")
+                    }),
                 ])
                 .await?;
-            for line in r.text("chat_lines").split(['\r', '\n']).map(str::trim).filter(|l| !l.is_empty()) {
-                speech.sink.send(vec![i(id), s(crate::text::clip(line, 200))]).await?;
+            for line in r
+                .text("chat_lines")
+                .split(['\r', '\n'])
+                .map(str::trim)
+                .filter(|l| !l.is_empty())
+            {
+                speech.sink.send(vec![i(id), s((line).to_string())]).await?;
             }
         }
     }
@@ -55,10 +95,29 @@ pub async fn run(ctx: Arc<Ctx>) -> Result<()> {
         let pd = ctx
             .writer(
                 "bots_petdata",
-                &["id", "type", "race", "color", "energy", "experience", "nutrition", "respect", "createstamp", "have_saddle", "hairdye", "pethair", "anyone_ride", "gnome_clothing"],
+                &[
+                    "id",
+                    "type",
+                    "race",
+                    "color",
+                    "energy",
+                    "experience",
+                    "nutrition",
+                    "respect",
+                    "createstamp",
+                    "have_saddle",
+                    "hairdye",
+                    "pethair",
+                    "anyone_ride",
+                    "gnome_clothing",
+                ],
             )
             .await?;
-        let mut rows = RowStream::open(&ctx.src, "SELECT t.* FROM users_pets t JOIN users u ON u.id = t.user_id").await?;
+        let mut rows = RowStream::open(
+            &ctx.src,
+            "SELECT t.* FROM users_pets t JOIN users u ON u.id = t.user_id",
+        )
+        .await?;
         while let Some(r) = rows.next().await? {
             let id = r.i64("id") + maps.pet_id_offset;
             w.sink
@@ -72,7 +131,7 @@ pub async fn run(ctx: Arc<Ctx>) -> Result<()> {
                     s(""),
                     i(r.i64("x")),
                     i(r.i64("y")),
-                    i(r.f64("z").round() as i64),
+                    f(r.f64("z")),
                     i(r.i64("rot")),
                     s("freeroam"),
                     s("M"),
@@ -84,7 +143,10 @@ pub async fn run(ctx: Arc<Ctx>) -> Result<()> {
                 .await?;
             let saddle = if !r.bool("saddle") {
                 0
-            } else if maps.furni(r.i64("saddle_item_id")).is_some_and(|d| d.item_name.contains("saddle2")) {
+            } else if maps
+                .furni(r.i64("saddle_item_id"))
+                .is_some_and(|d| d.item_name.contains("saddle2"))
+            {
                 10
             } else {
                 9
@@ -106,7 +168,11 @@ pub async fn run(ctx: Arc<Ctx>) -> Result<()> {
                     i(r.i64("hair_color")),
                     i(r.i64("hair_style")),
                     b(r.bool("ride")),
-                    s(if gnome.is_empty() { "-1".to_string() } else { gnome }),
+                    s(if gnome.is_empty() {
+                        "-1".to_string()
+                    } else {
+                        gnome
+                    }),
                 ])
                 .await?;
         }

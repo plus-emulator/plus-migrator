@@ -8,50 +8,183 @@
 
 /// Every interaction string the Plus parser accepts (InteractionTypes.cs).
 pub const PLUS_INTERACTIONS: &[&str] = &[
-    "default", "gate", "postit", "dimmer", "trophy", "bed", "scoreboard", "vendingmachine", "alert",
-    "onewaygate", "loveshuffler", "habbowheel", "dice", "hopper", "bottle", "teleport", "pool", "roller",
-    "fbgate", "icetag_pole", "icetag_field", "iceskates", "rollerskate", "lowpool", "haloweenpool", "ball",
-    "green_goal", "yellow_goal", "red_goal", "blue_goal", "green_score", "yellow_score", "blue_score",
-    "red_score", "bb_blue_gate", "bb_red_gate", "bb_yellow_gate", "bb_green_gate", "bb_patch",
-    "bb_blue_score", "bb_red_score", "bb_yellow_score", "bb_green_score", "banzaicounter", "bb_teleport",
-    "banzaipuck", "bb_pyramid", "freezetimer", "freezeexit", "freezeredcounter", "freezebluecounter",
-    "freezeyellowcounter", "freezegreencounter", "freezeyellowgate", "freezeredgate", "freezegreengate",
-    "freezebluegate", "freezetileblock", "freezetile", "jukebox", "musicdisc", "pressure_pad",
-    "wf_floor_switch1", "wf_floor_switch2", "puzzlebox", "water", "gift", "background", "mannequin",
-    "vip_gate", "roombg", "gld_item", "gld_gate", "guild_forum", "tent", "tent_small", "badge_display",
-    "tile_walkmagic", "stacktool", "television", "wired_effect", "wired_trigger", "wired_condition",
-    "wired_selector", "wired_addon", "wired_variable", "floor", "wallpaper", "landscape", "badge",
-    "crackable_egg", "effect", "deal", "roomdeal", "horse_saddle_1", "horse_saddle_2", "horse_hairstyle",
-    "horse_body_dye", "horse_hair_dye", "gnome_box", "bot", "purchasable_clothing", "pet_breeding_box",
-    "arrow", "lovelock", "cannon", "wf_upcounter1", "wf_upcounter2", "wf_game_upcounter1",
-    "wf_game_upcounter2", "counter", "camera_picture", "fx_provider", "exchange", "skateboard", "pet",
+    "area_hide",
+    "invis_control",
+    "wired_chest_furni",
+    "wired_chest_coins",
+    "wired_contract_payment",
+    "wired_contract_trade",
+    "wired_contract_reward",
+    "wired_room_linker",
+    "wired_label",
+    "wired_link",
+    "default",
+    "gate",
+    "postit",
+    "dimmer",
+    "trophy",
+    "bed",
+    "scoreboard",
+    "vendingmachine",
+    "alert",
+    "onewaygate",
+    "loveshuffler",
+    "habbowheel",
+    "dice",
+    "hopper",
+    "bottle",
+    "teleport",
+    "pool",
+    "roller",
+    "fbgate",
+    "icetag_pole",
+    "icetag_field",
+    "iceskates",
+    "rollerskate",
+    "lowpool",
+    "haloweenpool",
+    "ball",
+    "green_goal",
+    "yellow_goal",
+    "red_goal",
+    "blue_goal",
+    "green_score",
+    "yellow_score",
+    "blue_score",
+    "red_score",
+    "bb_blue_gate",
+    "bb_red_gate",
+    "bb_yellow_gate",
+    "bb_green_gate",
+    "bb_patch",
+    "bb_blue_score",
+    "bb_red_score",
+    "bb_yellow_score",
+    "bb_green_score",
+    "banzaicounter",
+    "bb_teleport",
+    "banzaipuck",
+    "bb_pyramid",
+    "freezetimer",
+    "freezeexit",
+    "freezeredcounter",
+    "freezebluecounter",
+    "freezeyellowcounter",
+    "freezegreencounter",
+    "freezeyellowgate",
+    "freezeredgate",
+    "freezegreengate",
+    "freezebluegate",
+    "freezetileblock",
+    "freezetile",
+    "jukebox",
+    "musicdisc",
+    "pressure_pad",
+    "wf_floor_switch1",
+    "wf_floor_switch2",
+    "puzzlebox",
+    "water",
+    "gift",
+    "background",
+    "mannequin",
+    "vip_gate",
+    "roombg",
+    "gld_item",
+    "gld_gate",
+    "guild_forum",
+    "tent",
+    "tent_small",
+    "badge_display",
+    "tile_walkmagic",
+    "stacktool",
+    "television",
+    "wired_effect",
+    "wired_trigger",
+    "wired_condition",
+    "wired_selector",
+    "wired_addon",
+    "wired_variable",
+    "floor",
+    "wallpaper",
+    "landscape",
+    "badge",
+    "crackable_egg",
+    "effect",
+    "deal",
+    "roomdeal",
+    "horse_saddle_1",
+    "horse_saddle_2",
+    "horse_hairstyle",
+    "horse_body_dye",
+    "horse_hair_dye",
+    "gnome_box",
+    "bot",
+    "purchasable_clothing",
+    "pet_breeding_box",
+    "arrow",
+    "lovelock",
+    "cannon",
+    "wf_upcounter1",
+    "wf_upcounter2",
+    "wf_game_upcounter1",
+    "wf_game_upcounter2",
+    "counter",
+    "camera_picture",
+    "fx_provider",
+    "exchange",
+    "skateboard",
+    "pet",
 ];
 
 /// Source names whose Plus equivalent has a different name.
 const RENAMES: &[(&str, &str)] = &[
-    ("", "default"), ("normal", "default"), ("switch", "default"), ("multiheight", "default"),
-    ("random_state", "default"), ("switch_remote_control", "default"),
-    ("clothing", "purchasable_clothing"), ("crackable", "crackable_egg"), ("crackables", "crackable_egg"),
-    ("crackable_master", "crackable_egg"), ("crackable_monster", "crackable_egg"),
-    ("crackable_subscription_box", "crackable_egg"),
-    ("pressureplate", "pressure_pad"), ("pressureplate_group", "pressure_pad"),
-    ("floor_switch", "wf_floor_switch1"), ("love_lock", "lovelock"), ("guild_furni", "gld_item"),
-    ("guild_gate", "gld_gate"), ("club_gate", "vip_gate"), ("vendingmachine_no_sides", "vendingmachine"),
-    ("vending", "vendingmachine"), ("effect_vendingmachine", "vendingmachine"),
-    ("effect_vendingmachine_no_sides", "vendingmachine"), ("puzzle_box", "puzzlebox"), ("football", "ball"),
-    ("rebug_football", "ball"), ("trax_machine", "jukebox"), ("stack_helper", "stacktool"),
-    ("stack_walk_helper", "stacktool"), ("tile_walk_magic", "tile_walkmagic"), ("pyramid", "bb_pyramid"),
-    ("external_image", "camera_picture"), ("tile_fxprovider_nfs", "fx_provider"), ("colorwheel", "habbowheel"),
-    ("spinning_bottle", "bottle"), ("rollerskate_field", "rollerskate"), ("background_toner", "roombg"),
-    ("ads_bg", "background"), ("youtube", "television"), ("yt_tv", "television"),
-    ("breeding_nest", "pet_breeding_box"), ("club_hopper", "hopper"), ("costume_hopper", "hopper"),
-    ("costume_hoppper", "hopper"), ("vote_counter", "scoreboard"), ("game_timer", "freezetimer"),
-    ("football_gate", "fbgate"), ("battlebanzai_puck", "banzaipuck"), ("battlebanzai_sphere", "bb_pyramid"),
-    ("battlebanzai_random_teleport", "bb_teleport"), ("battlebanzai_tile", "bb_patch"),
-    ("freeze_tile", "freezetile"), ("freeze_block", "freezetileblock"), ("freeze_exit", "freezeexit"),
-    ("water_item", "water"), ("wateritem", "water"), ("game_upcounter", "wf_game_upcounter1"),
-    ("teleporttile", "teleport"), ("club_teleporttile", "teleport"), ("pet_food", "default"),
-    ("pet_drink", "default"), ("pet_toy", "default"), ("nest", "default"),
+    ("crafting", "default"),
+    ("", "default"),
+    ("normal", "default"),
+    ("switch", "default"),
+    ("multiheight", "default"),
+    ("clothing", "purchasable_clothing"),
+    ("crackable", "crackable_egg"),
+    ("crackables", "crackable_egg"),
+    ("crackable_master", "crackable_egg"),
+    ("pressureplate", "pressure_pad"),
+    ("floor_switch", "wf_floor_switch1"),
+    ("love_lock", "lovelock"),
+    ("guild_furni", "gld_item"),
+    ("guild_gate", "gld_gate"),
+    ("club_gate", "vip_gate"),
+    ("vendingmachine_no_sides", "vendingmachine"),
+    ("vending", "vendingmachine"),
+    ("puzzle_box", "puzzlebox"),
+    ("football", "ball"),
+    ("rebug_football", "ball"),
+    ("stack_helper", "stacktool"),
+    ("stack_walk_helper", "stacktool"),
+    ("tile_walk_magic", "tile_walkmagic"),
+    ("pyramid", "bb_pyramid"),
+    ("external_image", "camera_picture"),
+    ("tile_fxprovider_nfs", "fx_provider"),
+    ("colorwheel", "habbowheel"),
+    ("spinning_bottle", "bottle"),
+    ("rollerskate_field", "rollerskate"),
+    ("background_toner", "roombg"),
+    ("ads_bg", "background"),
+    ("youtube", "television"),
+    ("yt_tv", "television"),
+    ("breeding_nest", "pet_breeding_box"),
+    ("vote_counter", "scoreboard"),
+    ("game_timer", "freezetimer"),
+    ("football_gate", "fbgate"),
+    ("battlebanzai_puck", "banzaipuck"),
+    ("battlebanzai_sphere", "bb_pyramid"),
+    ("battlebanzai_random_teleport", "bb_teleport"),
+    ("battlebanzai_tile", "bb_patch"),
+    ("freeze_tile", "freezetile"),
+    ("freeze_block", "freezetileblock"),
+    ("freeze_exit", "freezeexit"),
+    ("water_item", "water"),
+    ("wateritem", "water"),
+    ("game_upcounter", "wf_game_upcounter1"),
 ];
 
 const COLOURS: &[&str] = &["red", "blue", "green", "yellow"];
@@ -66,7 +199,11 @@ pub struct Translated {
 }
 
 fn plain(name: &str) -> Translated {
-    Translated { interaction: name.to_string(), behaviour_data: 0, fell_back: false }
+    Translated {
+        interaction: name.to_string(),
+        behaviour_data: 0,
+        fell_back: false,
+    }
 }
 
 /// Translates a non-wired furni definition. Wired boxes are handled by the wired
@@ -75,9 +212,43 @@ pub fn translate(src_interaction: &str, item_name: &str, kind: &str) -> Translat
     let it = src_interaction.trim().to_ascii_lowercase();
     let name = item_name.trim().to_ascii_lowercase();
 
+    // These names used to be mapped to superficially similar handlers. That changes
+    // behavior (automatic teleport vs a door, avatar FX vs hand items, random vs toggle,
+    // HC checks, group checks, subscriptions vs crack prizes). Require a real adapter.
+    if matches!(
+        it.as_str(),
+        "teleporttile"
+            | "club_teleporttile"
+            | "effect_vendingmachine"
+            | "effect_vendingmachine_no_sides"
+            | "random_state"
+            | "switch_remote_control"
+            | "pressureplate_group"
+            | "crackable_subscription_box"
+            | "crackable_monster"
+            | "costume_hopper"
+            | "costume_hoppper"
+            | "club_hopper"
+            | "trax_machine"
+            | "pet_food"
+            | "pet_drink"
+            | "pet_toy"
+            | "nest"
+    ) {
+        return Translated {
+            interaction: "default".into(),
+            behaviour_data: 0,
+            fell_back: true,
+        };
+    }
+
     // Credit furni: Arcturus redeems by classname (CF_10_coin_gold = 10 credits).
     if let Some(value) = credit_value(&name) {
-        return Translated { interaction: "exchange".into(), behaviour_data: value, fell_back: false };
+        return Translated {
+            interaction: "exchange".into(),
+            behaviour_data: value,
+            fell_back: false,
+        };
     }
     // Room decorations are consumed by classname in Arcturus.
     if kind == "i" && matches!(name.as_str(), "floor" | "wallpaper" | "landscape") {
@@ -98,11 +269,17 @@ pub fn translate(src_interaction: &str, item_name: &str, kind: &str) -> Translat
     if PLUS_INTERACTIONS.contains(&it.as_str()) {
         return plain(&it);
     }
-    Translated { interaction: "default".into(), behaviour_data: 0, fell_back: true }
+    Translated {
+        interaction: "default".into(),
+        behaviour_data: 0,
+        fell_back: true,
+    }
 }
 
 fn credit_value(name: &str) -> Option<i64> {
-    let rest = name.strip_prefix("cfc_").or_else(|| name.strip_prefix("cf_"))?;
+    let rest = name
+        .strip_prefix("cfc_")
+        .or_else(|| name.strip_prefix("cf_"))?;
     let digits: String = rest.chars().take_while(|c| c.is_ascii_digit()).collect();
     if digits.is_empty() || !rest[digits.len()..].starts_with('_') {
         return None;
@@ -142,10 +319,68 @@ fn game_piece(it: &str, name: &str) -> Option<String> {
         }
     }
     // Upcounters and floor switches are wf_* classnames that are not boxes.
-    for exact in ["wf_floor_switch1", "wf_floor_switch2", "wf_upcounter1", "wf_upcounter2", "wf_game_upcounter1", "wf_game_upcounter2"] {
+    for exact in [
+        "wf_floor_switch1",
+        "wf_floor_switch2",
+        "wf_upcounter1",
+        "wf_upcounter2",
+        "wf_game_upcounter1",
+        "wf_game_upcounter2",
+    ] {
         if name == exact || it == exact {
             return Some(exact.to_string());
         }
     }
     None
+}
+
+/// Registrations from Morningstar e33ac57a; this distinguishes a known source
+/// handler from a fork/plugin name, not official provenance of the asset itself.
+pub fn reference_handler(name: &str) -> Option<&'static str> {
+    static HANDLERS: std::sync::LazyLock<std::collections::HashMap<String, String>> =
+        std::sync::LazyLock::new(|| {
+            serde_json::from_str(include_str!("arcturus_interactions.json")).unwrap()
+        });
+    HANDLERS.get(name).map(String::as_str)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn genuine_renames_and_identity() {
+        assert_eq!(
+            translate("guild_furni", "gld_flag", "s").interaction,
+            "gld_item"
+        );
+        assert_eq!(
+            translate("battlebanzai_gate_red", "bb_gate_r", "s").interaction,
+            "bb_red_gate"
+        );
+        assert_eq!(
+            translate("default", "CF_50_goldbar", "s").behaviour_data,
+            50
+        );
+        assert_eq!(
+            translate("default", "wallpaper", "i").interaction,
+            "wallpaper"
+        );
+        assert_eq!(translate("crafting", "altar", "s").interaction, "default");
+    }
+    #[test]
+    fn similar_names_are_not_behavior_equivalence() {
+        for interaction in [
+            "teleporttile",
+            "effect_vendingmachine",
+            "random_state",
+            "crackable_subscription_box",
+            "club_hopper",
+        ] {
+            assert!(
+                translate(interaction, "example", "s").fell_back,
+                "{interaction}"
+            );
+        }
+        assert!(translate("custom_plugin", "example", "s").fell_back);
+    }
 }

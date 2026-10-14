@@ -3,6 +3,7 @@ pub mod prep;
 
 mod bots;
 mod catalog;
+mod crafting;
 mod furniture;
 mod groups;
 mod items;
@@ -23,6 +24,7 @@ pub fn all() -> Vec<Step> {
         step!("items", 1, items::run),
         step!("bots", 1, bots::run),
         step!("wired", 1, crate::wired::run),
+        step!("crafting", 1, crafting::run),
         step!("marketplace", 2, items::marketplace_credits),
     ]
 }

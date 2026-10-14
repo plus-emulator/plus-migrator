@@ -7,7 +7,7 @@ keeping their original rows in an archive does not make them work in Plus.
 
 The tested contracts are Morningstar `e33ac57a518d83afad5ad103599e8f3d03c37508`
 and PlusEMU dev `e3dc5f3437a78900d985821a13172db5d9051dd0`, with the companion
-`WiredFurniSnapshot.SkipStateRestore` patch. A fork's schema/behavior can differ.
+`WiredFurniSnapshot.SkipStateRestore` and roller activation patches. A fork's schema/behavior can differ.
 Polaris detection remains available, but full Polaris compatibility is unverified.
 See [compatibility findings](docs/compatibility.md) and the
 [361-interaction inventory](docs/interaction-map.md).
@@ -20,11 +20,14 @@ another. Stop **all** writers to both staging databases during the run. The sour
 connection only reads data and changes its own session settings.
 
 Apply [the companion snapshot patch](compat/plus-arcturus-snapshot.patch) to the
-pinned **staging** Plus checkout before building the validator. The patch is also
+pinned **staging** Plus checkout before building the validator. Also apply the
+[roller activation patch](compat/plus-roller-activation.patch): the pinned Plus
+legacy engine otherwise leaves rollers idle despite correct interaction mappings. The patch is also
 available in the local Plus branch `fix/arcturus-wired-snapshot-state` (`ba1a8e83`).
 
 ```bash
 git -C /absolute/path/to/PlusEMU apply /absolute/path/to/plus-migrator/compat/plus-arcturus-snapshot.patch
+git -C /absolute/path/to/PlusEMU apply /absolute/path/to/plus-migrator/compat/plus-roller-activation.patch
 ```
 
 Build the migrator and the validator against that same Plus code:

@@ -102,3 +102,23 @@ state. This patch does not certify a complete production cutover.
 4. Rehearse again on fresh isolated databases. Require a clean report, full reconciliation,
    archive restore verification and in-client checks of rooms, inventories, pets,
    accounts, catalog purchases and Wired game sequences before considering cutover.
+
+## Diagnostic follow-up: rollers and gates
+
+The diagnostic hotel's room 76 reproduced stationary rollers even though the
+source and target both used `roller`. Its attic gate used `gate`, also recognized
+by Plus. The pinned Plus legacy movement engine did not enable roller processing
+when `TryAddRoller` registered a roller; its load-time activation depended on an
+uninitialized legacy flag. The [roller activation patch](../compat/plus-roller-activation.patch)
+enables processing at registration, for both loaded and newly placed furniture,
+without changing the legacy collision rules or the migration's interaction map.
+
+A regression test failed before the patch with an unmoved rider and passed after
+it. The roller/gate-filtered Plus suite passed 377 tests (7 skipped). Browser checks
+on the isolated diagnostic hotel confirmed transport along room 76's roller chain,
+walk-through with the attic gate open, and blocked entry with it closed. These are
+specific runtime checks, not certification of all mapped furniture behavior.
+
+Room 76 uses the source's default roller speed (4). Source per-room non-default
+roller speeds remain a separate compatibility gap: the fixture has two such rooms,
+and the original values remain available in the recovery archive.

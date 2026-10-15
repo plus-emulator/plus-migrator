@@ -7,6 +7,7 @@
 //! never empty default configurations. Selected item identities remain unchanged.
 
 mod native;
+mod polaris;
 
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, LazyLock};
@@ -969,55 +970,67 @@ pub async fn run(ctx: Arc<Ctx>) -> Result<()> {
             ctx: &ctx,
         };
         let src_name = def.src_interaction.as_str();
-        let config = match (ctx.flavor, SPECS.get(src_name)) {
-            (Flavor::Polaris, Some(spec)) => decode_spec(spec, &x),
-            _ => decode_known(src_name, &x),
-        };
-        let Some(config) = config else {
-            *unconverted.entry(src_name.to_string()).or_default() += 1;
-            continue;
-        };
-        if target == "wf_act_give_reward" {
-            let mut codes = HashMap::new();
-            if let Some(list) = x
-                .json
-                .as_ref()
-                .and_then(|j| j.get("rewards"))
-                .and_then(J::as_array)
-            {
-                for reward in list {
-                    let id = reward.get("id").and_then(J::as_i64).unwrap_or(0);
-                    let raw = reward.get("data").and_then(J::as_str).unwrap_or("");
-                    let code = if reward.get("badge").and_then(J::as_bool).unwrap_or(false) {
-                        Some(raw.to_string())
-                    } else {
-                        raw.strip_prefix("furni#")
-                            .and_then(|s| s.parse().ok())
-                            .and_then(|id| maps.furni_id(id))
-                            .map(|id| format!("furni#{id}"))
-                    };
-                    if let Some(code) = code
-                        && codes.insert(id, code).is_some()
-                    {
-                        ctx.note(format!(
-                            "Wired reward item {} has ambiguous duplicate prize ids",
-                            r.i64("id")
-                        ));
-                    }
+        let serialized = if matches!(ctx.flavor, Flavor::Polaris)
+            && (polaris::NAMES.contains(&src_name) || polaris::BLOCKED.contains(&src_name))
+        {
+            match polaris::convert(src_name, target, &x) {
+                Ok(value) => value,
+                Err(error) => {
+                    ctx.note(format!("Wired item {} ({src_name}): {error}", r.i64("id")));
+                    continue;
                 }
             }
-            rewards.insert(r.i64("id"), codes);
-        }
-        let native = match native::convert(target, config, |id| {
-            items.get(&id).is_some_and(|it| it.wall)
-        }) {
-            Ok(native) => native,
-            Err(error) => {
-                ctx.note(format!("Wired item {} ({src_name}): {error}", r.i64("id")));
+        } else {
+            let config = match (ctx.flavor, SPECS.get(src_name)) {
+                (Flavor::Polaris, Some(spec)) => decode_spec(spec, &x),
+                _ => decode_known(src_name, &x),
+            };
+            let Some(config) = config else {
+                *unconverted.entry(src_name.to_string()).or_default() += 1;
                 continue;
+            };
+            if target == "wf_act_give_reward" {
+                let mut codes = HashMap::new();
+                if let Some(list) = x
+                    .json
+                    .as_ref()
+                    .and_then(|j| j.get("rewards"))
+                    .and_then(J::as_array)
+                {
+                    for reward in list {
+                        let id = reward.get("id").and_then(J::as_i64).unwrap_or(0);
+                        let raw = reward.get("data").and_then(J::as_str).unwrap_or("");
+                        let code = if reward.get("badge").and_then(J::as_bool).unwrap_or(false) {
+                            Some(raw.to_string())
+                        } else {
+                            raw.strip_prefix("furni#")
+                                .and_then(|s| s.parse().ok())
+                                .and_then(|id| maps.furni_id(id))
+                                .map(|id| format!("furni#{id}"))
+                        };
+                        if let Some(code) = code
+                            && codes.insert(id, code).is_some()
+                        {
+                            ctx.note(format!(
+                                "Wired reward item {} has ambiguous duplicate prize ids",
+                                r.i64("id")
+                            ));
+                        }
+                    }
+                }
+                rewards.insert(r.i64("id"), codes);
             }
+            let native = match native::convert(target, config, |id| {
+                items.get(&id).is_some_and(|it| it.wall)
+            }) {
+                Ok(native) => native,
+                Err(error) => {
+                    ctx.note(format!("Wired item {} ({src_name}): {error}", r.i64("id")));
+                    continue;
+                }
+            };
+            serde_json::to_value(&native)?
         };
-        let serialized = serde_json::to_value(&native)?;
         if ctx.validate_only {
             ctx.wired_validation
                 .lock()
@@ -1153,7 +1166,7 @@ mod tests {
     use super::*;
     use crate::steps::prep::{FurniDef, Maps};
     use std::sync::{Mutex, OnceLock};
-    fn context() -> Ctx {
+    pub(super) fn context() -> Ctx {
         let mut maps = Maps::default();
         maps.furni.insert(
             1001,

@@ -19,9 +19,17 @@ while ((line = Console.ReadLine()) != null) {
         }
         var native = row.GetProperty("configuration").Deserialize<WiredNativeEditorConfiguration>()!;
         if (!WiredBoxRegistry.TryGet(name, out var descriptor)
-            || !WiredNativeEditorProjection.TryCompile(id, descriptor, native, out _)) {
+            || !WiredNativeEditorProjection.TryCompile(id, descriptor, native, out var runtime)) {
             Console.Error.WriteLine($"Rejected Wired item {id}: {name}");
             errors++;
+        } else if (row.TryGetProperty("expected_runtime", out var expected) && expected.ValueKind == JsonValueKind.Object) {
+            var actual = JsonSerializer.SerializeToElement(runtime);
+            foreach (var field in expected.EnumerateObject()) {
+                if (!actual.TryGetProperty(field.Name, out var value) || !JsonElement.DeepEquals(value, field.Value)) {
+                    Console.Error.WriteLine($"Runtime mismatch for item {id}: {name}, {field.Name}");
+                    errors++;
+                }
+            }
         }
         total++;
     } catch (Exception e) when (e is JsonException or InvalidOperationException or ArgumentException) {

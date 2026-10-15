@@ -10,6 +10,13 @@ static CODES: LazyLock<HashMap<String, (i64, i64)>> = LazyLock::new(|| {
     serde_json::from_str(include_str!("native_codes.json")).expect("native codes")
 });
 
+pub(super) fn identity(name: &str) -> Result<(i64, i64)> {
+    CODES
+        .get(name)
+        .copied()
+        .context("box absent from pinned Plus registry")
+}
+
 #[derive(Serialize)]
 #[serde(rename_all = "PascalCase")]
 pub(super) struct Native {

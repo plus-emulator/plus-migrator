@@ -8,7 +8,8 @@ keeping their original rows in an archive does not make them work in Plus.
 The tested contracts are Morningstar `e33ac57a518d83afad5ad103599e8f3d03c37508`
 and PlusEMU dev `e3dc5f3437a78900d985821a13172db5d9051dd0`, with the companion
 `WiredFurniSnapshot.SkipStateRestore` and roller activation patches. A fork's schema/behavior can differ.
-Polaris detection remains available, but full Polaris compatibility is unverified.
+Polaris WIRED now has 44 additional direct serializer converters. Full-hotel Polaris
+compatibility remains unverified; see [Polaris coverage](docs/polaris-wired.md).
 See [compatibility findings](docs/compatibility.md) and the
 [361-interaction inventory](docs/interaction-map.md).
 
@@ -99,11 +100,14 @@ Reports contain identifiers and schema/interaction names, and should also stay p
 ```bash
 cargo test --locked
 cargo clippy --locked --all-targets -- -D warnings
-PLUS_MIGRATE_CONTRACT_FIXTURES=/tmp/standard-boxes.jsonl cargo test --locked
+PLUS_MIGRATE_CONTRACT_FIXTURES=/tmp/standard-boxes.jsonl \
+PLUS_MIGRATE_POLARIS_FIXTURES=/tmp/polaris-boxes.jsonl cargo test --locked
 /path/to/validate-wired < /tmp/standard-boxes.jsonl
+/path/to/validate-wired < /tmp/polaris-boxes.jsonl
 ```
 
-The generated fixture covers all 69 standard source Wired mapping entries. The
+The generated fixtures cover all 69 standard source Wired mapping entries and 44
+Polaris serializers. Selected Polaris cases also assert compiled runtime values. The
 production rehearsal additionally tested 280 configured standard boxes against Plus.
 The companion Plus patch has execution tests for both state-update paths and the
 single-snapshot fallback. See the findings for the limits of this evidence.

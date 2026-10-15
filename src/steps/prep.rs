@@ -22,29 +22,99 @@ const PINNED_FURNITURE: &[u32] = &[320, 4221, 4450];
 /// Tables holding hotel data. All are emptied before a run so the migrator can
 /// be re-run against the same target.
 pub const HOTEL_TABLES: &[&str] = &[
-    "users", "users_settings", "user_statistics", "user_info", "user_currencies", "user_badges",
-    "user_clothing", "user_wardrobe", "user_effects", "user_achievements", "user_favorites", "user_ignores",
-    "user_saved_searches", "user_roomvisits", "user_club_memberships", "club_membership_intervals",
-    "club_paydays", "club_credit_spending", "club_gift_claims", "user_roles", "user_permissions", "user_quests",
-    "user_presents", "user_vouchers", "user_sessions", "user_access_tokens", "user_remember_tokens",
-    "bans", "chatlogs", "chatlogs_console", "messenger_friendships", "messenger_requests",
-    "messenger_offline_messages", "groups", "group_memberships", "group_requests", "group_forums",
-    "group_forum_threads", "group_forum_messages", "group_forum_read_markers", "group_forum_post_limits",
-    "rooms", "room_rights", "room_bans", "room_promotions", "room_filter", "room_wired_settings",
-    "navigator_publics", "items", "items_groups", "room_items_moodlight", "room_items_toner",
-    "room_items_tele_links", "room_music_players", "room_music_playlist", "room_music_songs",
-    "wired_items", "wired_item_configurations", "wired_reward_state", "wired_variable_values",
-    "wired_variable_locks", "bots", "bots_petdata", "bots_speech", "catalog_marketplace_offers",
-    "catalog_marketplace_data", "catalog_vouchers", "camera_media", "camera_publications", "camera_purchases",
-    "camera_quota", "camera_accounts", "camera_competition_entries",
+    "users",
+    "users_settings",
+    "user_statistics",
+    "user_info",
+    "user_currencies",
+    "user_badges",
+    "user_clothing",
+    "user_wardrobe",
+    "user_effects",
+    "user_achievements",
+    "user_favorites",
+    "user_ignores",
+    "user_saved_searches",
+    "user_roomvisits",
+    "user_club_memberships",
+    "club_membership_intervals",
+    "club_paydays",
+    "club_credit_spending",
+    "club_gift_claims",
+    "user_roles",
+    "user_permissions",
+    "user_quests",
+    "user_presents",
+    "user_vouchers",
+    "user_sessions",
+    "user_access_tokens",
+    "user_remember_tokens",
+    "bans",
+    "chatlogs",
+    "chatlogs_console",
+    "messenger_friendships",
+    "messenger_requests",
+    "messenger_offline_messages",
+    "groups",
+    "group_memberships",
+    "group_requests",
+    "group_forums",
+    "group_forum_threads",
+    "group_forum_messages",
+    "group_forum_read_markers",
+    "group_forum_post_limits",
+    "rooms",
+    "room_rights",
+    "room_bans",
+    "room_promotions",
+    "room_filter",
+    "room_wired_settings",
+    "navigator_publics",
+    "items",
+    "items_groups",
+    "room_items_moodlight",
+    "room_items_toner",
+    "room_items_tele_links",
+    "room_music_players",
+    "room_music_playlist",
+    "room_music_songs",
+    "wired_items",
+    "wired_item_configurations",
+    "wired_reward_state",
+    "wired_variable_values",
+    "wired_variable_locks",
+    "bots",
+    "bots_petdata",
+    "bots_speech",
+    "catalog_marketplace_offers",
+    "catalog_marketplace_data",
+    "catalog_vouchers",
+    "camera_media",
+    "camera_publications",
+    "camera_purchases",
+    "camera_quota",
+    "camera_accounts",
+    "camera_competition_entries",
 ];
 
 /// Furniture and catalog content that the source hotel's own replaces.
 pub const CONTENT_TABLES: &[&str] = &[
-    "catalog_page_offers", "catalog_offer_limited", "catalog_offer_products", "club_gift_offers",
-    "catalog_offers", "catalog_page_texts", "catalog_page_images", "catalog_pages", "catalog_promotions",
-    "catalog_bot_presets", "crafting_recipes_ingredients", "crafting_altars_recipes", "crafting_recipes",
-    "user_crafting_recipes", "recycler_prizes", "room_music_disc_definitions",
+    "catalog_page_offers",
+    "catalog_offer_limited",
+    "catalog_offer_products",
+    "club_gift_offers",
+    "catalog_offers",
+    "catalog_page_texts",
+    "catalog_page_images",
+    "catalog_pages",
+    "catalog_promotions",
+    "catalog_bot_presets",
+    "crafting_recipes_ingredients",
+    "crafting_altars_recipes",
+    "crafting_recipes",
+    "user_crafting_recipes",
+    "recycler_prizes",
+    "room_music_disc_definitions",
 ];
 
 /// A source furni definition and what it becomes in Plus.
@@ -104,7 +174,10 @@ pub struct Maps {
 
 impl Maps {
     pub fn furni_id(&self, src: i64) -> Option<u32> {
-        u32::try_from(src).ok().and_then(|id| self.furni.get(&id)).map(|d| d.dst_id)
+        u32::try_from(src)
+            .ok()
+            .and_then(|id| self.furni.get(&id))
+            .map(|d| d.dst_id)
     }
 
     pub fn furni(&self, src: i64) -> Option<&FurniDef> {
@@ -124,15 +197,17 @@ pub struct RoomModel {
     pub door_z: f64,
     pub door_dir: i64,
     pub heightmap: String,
+    pub public_items: String,
     pub wall_height: i64,
     pub required_club_level: i64,
 }
 
 pub async fn prepare(ctx: &Ctx, force: bool) -> Result<()> {
     check_target(ctx, force).await?;
-    clear_target(ctx).await?;
     let maps = build_maps(ctx).await?;
-    ctx.maps.set(maps).map_err(|_| anyhow::anyhow!("prepare ran twice"))?;
+    ctx.maps
+        .set(maps)
+        .map_err(|_| anyhow::anyhow!("prepare ran twice"))?;
     Ok(())
 }
 
@@ -140,21 +215,59 @@ async fn check_target(ctx: &Ctx, force: bool) -> Result<()> {
     if !ctx.dst_schema.has_table("furniture") || !ctx.dst_schema.has_table("catalog_offers") {
         bail!("the target is not a Plus database; import Database/FreshInstall.sql into it first");
     }
-    if !force && scalar_i64(&ctx.dst, "SELECT COUNT(*) FROM users").await? > 0 {
-        bail!("the target already has users; pass --force to wipe it");
+    if !force {
+        for table in HOTEL_TABLES {
+            if ctx.dst_schema.has_table(table)
+                && scalar_i64(
+                    &ctx.dst,
+                    &format!(
+                        "SELECT EXISTS(SELECT 1 FROM {})",
+                        crate::archive::ident(table)
+                    ),
+                )
+                .await?
+                    > 0
+            {
+                bail!(
+                    "target table {table} is populated; only pass --force for a disposable staging database"
+                );
+            }
+        }
     }
     Ok(())
 }
 
-async fn clear_target(ctx: &Ctx) -> Result<()> {
+pub async fn clear_target(ctx: &Ctx) -> Result<()> {
     let mut conn = db::bulk_conn(&ctx.dst).await?;
-    for t in HOTEL_TABLES.iter().chain(CONTENT_TABLES) {
+    let mut clear: HashSet<String> = HOTEL_TABLES
+        .iter()
+        .chain(CONTENT_TABLES)
+        .map(|s| s.to_string())
+        .collect();
+    let edges=query_rows(&ctx.dst,"SELECT table_name,referenced_table_name FROM information_schema.key_column_usage WHERE table_schema=DATABASE() AND referenced_table_name IS NOT NULL").await?;
+    loop {
+        let before = clear.len();
+        for edge in &edges {
+            if clear.contains(&edge.str("referenced_table_name")) {
+                clear.insert(edge.str("table_name"));
+            }
+        }
+        if before == clear.len() {
+            break;
+        }
+    }
+    let mut clear: Vec<_> = clear.into_iter().collect();
+    clear.sort();
+    for t in &clear {
         if ctx.dst_schema.has_table(t) {
-            conn.query_drop(format!("TRUNCATE TABLE `{t}`")).await.with_context(|| format!("clearing {t}"))?;
+            conn.query_drop(format!("TRUNCATE TABLE `{t}`"))
+                .await
+                .with_context(|| format!("clearing {t}"))?;
         }
     }
     // Custom models belonged to the previous hotel; standard models stay.
-    conn.query_drop("DELETE FROM room_models WHERE custom = 1").await?;
+    conn.query_drop("DELETE FROM room_models WHERE custom = 1")
+        .await?;
 
     let camera = scalar_i64(
         &ctx.dst,
@@ -166,17 +279,25 @@ async fn clear_target(ctx: &Ctx) -> Result<()> {
     if camera > 0 {
         keep.push(camera.to_string());
     }
-    conn.query_drop(format!("DELETE FROM furniture WHERE id NOT IN ({})", keep.join(","))).await?;
+    conn.query_drop(format!(
+        "DELETE FROM furniture WHERE id NOT IN ({})",
+        keep.join(",")
+    ))
+    .await?;
     // Kept rows stay emulator-only so the source's furnidata owns their classnames.
-    conn.query_drop("UPDATE furniture SET has_furnidata = 0").await?;
+    conn.query_drop("UPDATE furniture SET has_furnidata = 0")
+        .await?;
     Ok(())
 }
 
 async fn build_maps(ctx: &Ctx) -> Result<Maps> {
-    let mut maps = Maps { category_fallback: 36, ..Default::default() };
+    let mut maps = Maps {
+        category_fallback: 36,
+        ..Default::default()
+    };
 
     // ---- furniture -------------------------------------------------------
-    let kept: HashSet<u32> = query_rows(&ctx.dst, "SELECT id FROM furniture")
+    let kept: HashSet<u32> = query_rows(&ctx.dst, "SELECT id FROM furniture WHERE id IN (320,4221,4450) OR id = (SELECT CAST(value AS UNSIGNED) FROM server_settings WHERE `key` = 'camera.item_id')")
         .await?
         .iter()
         .map(|r| r.i64("id") as u32)
@@ -228,24 +349,41 @@ async fn build_maps(ctx: &Ctx) -> Result<Maps> {
     }
 
     // ---- ranks -------------------------------------------------------------
-    let roles = query_rows(&ctx.dst, "SELECT id, slug, security_level, weight FROM roles ORDER BY weight DESC, id")
-        .await?;
+    let roles = query_rows(
+        &ctx.dst,
+        "SELECT id, slug, security_level, weight FROM roles ORDER BY weight DESC, id",
+    )
+    .await?;
     // Page keys each role holds; a page gated for a rank uses the strongest key
     // its role actually has, so staff of that rank and above can open it.
     let mut role_keys: HashMap<i64, Vec<String>> = HashMap::new();
     for r in query_rows(&ctx.dst, "SELECT role_id, permission_key FROM role_permissions WHERE permission_key LIKE 'catalog.pages.%'").await? {
         role_keys.entry(r.i64("role_id")).or_default().push(r.str("permission_key"));
     }
-    let weight_of = |slug: &str| roles.iter().find(|r| r.str("slug") == slug).map(|r| r.i64("weight")).unwrap_or(-1);
-    let rank_table = if ctx.has_src("permission_ranks") { "permission_ranks" } else { "permissions" };
+    let weight_of = |slug: &str| {
+        roles
+            .iter()
+            .find(|r| r.str("slug") == slug)
+            .map(|r| r.i64("weight"))
+            .unwrap_or(-1)
+    };
+    let rank_table = if ctx.has_src("permission_ranks") {
+        "permission_ranks"
+    } else {
+        "permissions"
+    };
     if ctx.has_src(rank_table) {
         for r in query_rows(&ctx.src, &format!("SELECT * FROM `{rank_table}`")).await? {
             let rank = r.i64("id");
             let level = r.opt_i64("level").unwrap_or(rank).clamp(1, 7);
             let name = r.text("rank_name").to_ascii_lowercase();
-            let Some(role) = pick_role(&roles, &name, level) else { continue };
+            let Some(role) = pick_role(&roles, &name, level) else {
+                continue;
+            };
             if let Some(key) = role_keys.get(&role.id).and_then(|keys| {
-                keys.iter().max_by_key(|k| weight_of(k.trim_start_matches("catalog.pages."))).cloned()
+                keys.iter()
+                    .max_by_key(|k| weight_of(k.trim_start_matches("catalog.pages.")))
+                    .cloned()
             }) {
                 maps.rank_permissions.insert(rank, key);
             }
@@ -265,8 +403,14 @@ async fn build_maps(ctx: &Ctx) -> Result<Maps> {
     }
     // Polaris temporary ranks: users.rank holds the temporary one.
     if ctx.has_src("user_temporary_ranks") {
-        for r in query_rows(&ctx.src, "SELECT user_id, previous_rank_id FROM user_temporary_ranks").await? {
-            maps.real_ranks.insert(r.i64("user_id"), r.i64("previous_rank_id"));
+        for r in query_rows(
+            &ctx.src,
+            "SELECT user_id, previous_rank_id FROM user_temporary_ranks",
+        )
+        .await?
+        {
+            maps.real_ranks
+                .insert(r.i64("user_id"), r.i64("previous_rank_id"));
         }
     }
 
@@ -285,19 +429,34 @@ async fn build_maps(ctx: &Ctx) -> Result<Maps> {
             .unwrap_or(0);
     }
     if ctx.has_src("navigator_flatcats") {
-        for r in query_rows(&ctx.src, "SELECT id, caption_save, caption FROM navigator_flatcats").await? {
-            let label = format!("{} {}", r.str("caption_save"), r.str("caption")).to_ascii_lowercase();
-            maps.categories.insert(r.i64("id"), category_for(&label, maps.category_fallback));
+        for r in query_rows(
+            &ctx.src,
+            "SELECT id, caption_save, caption FROM navigator_flatcats",
+        )
+        .await?
+        {
+            let label =
+                format!("{} {}", r.str("caption_save"), r.str("caption")).to_ascii_lowercase();
+            maps.categories
+                .insert(r.i64("id"), category_for(&label, maps.category_fallback));
         }
     }
 
     // ---- room models -------------------------------------------------------
     build_room_models(ctx, &mut maps).await?;
 
-    maps.rooms = query_rows(&ctx.src, "SELECT id FROM rooms").await?.iter().map(|r| r.i64("id")).collect();
+    maps.rooms = query_rows(&ctx.src, "SELECT id FROM rooms")
+        .await?
+        .iter()
+        .map(|r| r.i64("id"))
+        .collect();
     let max_item = scalar_i64(&ctx.src, "SELECT COALESCE(MAX(id), 0) FROM items").await?;
     maps.next_item_id = AtomicI64::new(max_item + 1);
-    let max_bot = if ctx.has_src("bots") { scalar_i64(&ctx.src, "SELECT COALESCE(MAX(id), 0) FROM bots").await? } else { 0 };
+    let max_bot = if ctx.has_src("bots") {
+        scalar_i64(&ctx.src, "SELECT COALESCE(MAX(id), 0) FROM bots").await?
+    } else {
+        0
+    };
     maps.pet_id_offset = max_bot;
 
     Ok(maps)
@@ -315,10 +474,18 @@ fn furni_kind(t: &str) -> String {
 /// security level with the highest weight. VIP-style ranks map to the VIP roles
 /// rather than to staff roles of the same level.
 fn pick_role(roles: &[db::SrcRow], rank_name: &str, level: i64) -> Option<Role> {
-    let as_role = |r: &db::SrcRow| Role { id: r.i64("id"), slug: r.str("slug"), security_level: r.i64("security_level") };
+    let as_role = |r: &db::SrcRow| Role {
+        id: r.i64("id"),
+        slug: r.str("slug"),
+        security_level: r.i64("security_level"),
+    };
     let by_slug = |slug: &str| roles.iter().find(|r| r.str("slug") == slug).map(as_role);
     if rank_name.contains("vip") || rank_name.contains("premium") {
-        let slug = if rank_name.contains("gold") || rank_name.contains("super") { "gold_vip" } else { "vip" };
+        let slug = if rank_name.contains("gold") || rank_name.contains("super") {
+            "gold_vip"
+        } else {
+            "vip"
+        };
         if let Some(role) = by_slug(slug) {
             return Some(role);
         }
@@ -326,7 +493,10 @@ fn pick_role(roles: &[db::SrcRow], rank_name: &str, level: i64) -> Option<Role> 
     if level <= 1 {
         return by_slug("default");
     }
-    roles.iter().find(|r| r.i64("security_level") == level).map(as_role)
+    roles
+        .iter()
+        .find(|r| r.i64("security_level") == level)
+        .map(as_role)
 }
 
 /// Arcturus flat categories carry localisation keys such as
@@ -349,64 +519,62 @@ fn category_for(label: &str, fallback: i64) -> i64 {
     fallback
 }
 
-/// Resolves every room's floor plan. Custom plans (`override_model='1'`) become
-/// `model_bc_<room id>`, the name Plus's floor editor uses. A standard model is
-/// shared only when Plus has the same model with the same heightmap; otherwise
-/// the source model is copied under `arc_<name>`, because Plus moves any floor
-/// item outside the heightmap to inventory on first room load.
+/// Copy each room's source geometry, entrance and wall height into a room-local
+/// model. Plus moves out-of-bounds furniture to inventory on first room load.
 async fn build_room_models(ctx: &Ctx, maps: &mut Maps) -> Result<()> {
-    let plus_models: HashMap<String, String> = query_rows(&ctx.dst, "SELECT id, heightmap FROM room_models WHERE custom = 0")
-        .await?
-        .into_iter()
-        .map(|r| (r.str("id").to_ascii_lowercase(), normalize_heightmap(&r.str("heightmap")).0))
-        .collect();
-
-    let mut src_models: HashMap<String, db::SrcRow> = HashMap::new();
-    if ctx.has_src("room_models") {
-        for r in query_rows(&ctx.src, "SELECT * FROM room_models").await? {
-            src_models.insert(r.str("name").to_ascii_lowercase(), r);
-        }
+    let mut source = HashMap::new();
+    for row in query_rows(&ctx.src, "SELECT * FROM room_models").await? {
+        source.insert(row.str("name").to_ascii_lowercase(), row);
     }
-    let mut custom: HashMap<i64, db::SrcRow> = HashMap::new();
+    let mut custom = HashMap::new();
     if ctx.has_src("room_models_custom") {
-        for r in query_rows(&ctx.src, "SELECT * FROM room_models_custom").await? {
-            custom.insert(r.i64("id"), r);
+        for row in query_rows(&ctx.src, "SELECT * FROM room_models_custom").await? {
+            custom.insert(row.i64("id"), row);
         }
     }
-
-    let mut copied: HashMap<String, String> = HashMap::new();
-    for room in query_rows(&ctx.src, "SELECT id, model, override_model, wall_height FROM rooms").await? {
+    // A room's wall height belongs to that room, even when its floor plan is standard.
+    // Room-local models also avoid sharing a mismatched entrance with the target hotel.
+    for room in query_rows(
+        &ctx.src,
+        "SELECT id,model,override_model,wall_height FROM rooms",
+    )
+    .await?
+    {
         let room_id = room.i64("id");
-        if room.bool("override_model") {
-            if let Some(c) = custom.get(&room_id) {
-                let id = format!("model_bc_{room_id}");
-                maps.new_models.push(model_from(&id, c, room.i64("wall_height"), 0));
-                maps.room_models.insert(room_id, id);
-                continue;
-            }
-        }
-        let name = room.str("model").to_ascii_lowercase();
-        let src = src_models.get(&name);
-        let same_as_plus = match (src, plus_models.get(&name)) {
-            (Some(s), Some(p)) => normalize_heightmap(&s.str("heightmap")).0 == *p,
-            (None, Some(_)) => true,
-            _ => false,
-        };
-        if same_as_plus {
-            maps.room_models.insert(room_id, name);
-        } else if let Some(s) = src {
-            let id = copied
-                .entry(name.clone())
-                .or_insert_with(|| {
-                    let id = crate::text::clip(&format!("arc_{name}"), 100);
-                    maps.new_models.push(model_from(&id, s, -1, if s.bool("club_only") { 2 } else { 0 }));
-                    id
-                })
-                .clone();
-            maps.room_models.insert(room_id, id);
+        let row = if room.bool("override_model") {
+            custom.get(&room_id)
         } else {
-            // The room references a model that exists nowhere; the rooms step drops it.
+            source.get(&room.str("model").to_ascii_lowercase())
+        };
+        let Some(row) = row else {
+            ctx.note(format!(
+                "Room {room_id}: missing source floor plan (no fallback applied)"
+            ));
+            continue;
+        };
+        let id = format!("model_bc_{room_id}");
+        let (_, invalid) = normalize_heightmap(&row.str("heightmap"));
+        if invalid > 0 {
+            ctx.note(format!(
+                "Room {room_id}: {invalid} heightmap tiles cannot be represented by Plus"
+            ));
         }
+        let model = model_from(
+            &id,
+            row,
+            room.i64("wall_height"),
+            if row.bool("club_only") { 2 } else { 0 },
+        );
+        if model.heightmap.is_empty()
+            || !(0..=7).contains(&model.door_dir)
+            || tile_height(&model.heightmap, model.door_x, model.door_y).is_none()
+        {
+            ctx.note(format!(
+                "Room {room_id}: invalid entrance or empty heightmap"
+            ));
+        }
+        maps.new_models.push(model);
+        maps.room_models.insert(room_id, id);
     }
     Ok(())
 }
@@ -418,10 +586,15 @@ fn model_from(id: &str, r: &db::SrcRow, wall_height: i64, club: i64) -> RoomMode
         id: id.to_string(),
         door_x,
         door_y,
-        door_z: tile_height(&heightmap, door_x, door_y).unwrap_or(0.0),
-        door_dir: r.i64("door_dir").clamp(0, 7),
+        door_z: if r.is_null("door_z") {
+            tile_height(&heightmap, door_x, door_y).unwrap_or(0.0)
+        } else {
+            r.f64("door_z")
+        },
+        door_dir: r.i64("door_dir"),
         heightmap,
-        wall_height: wall_height.clamp(-1, 15),
+        public_items: r.str("public_items"),
+        wall_height,
         required_club_level: club,
     }
 }
@@ -431,12 +604,9 @@ fn model_from(id: &str, r: &db::SrcRow, wall_height: i64, club: i64) -> RoomMode
 /// and how many tiles had to be blocked because Plus cannot represent them.
 pub fn normalize_heightmap(raw: &str) -> (String, usize) {
     let unified = raw.replace("\r\n", "\r").replace('\n', "\r");
-    let mut rows: Vec<String> = unified.split('\r').map(|r| r.trim().to_string()).collect();
+    let mut rows: Vec<String> = unified.split('\r').map(|r| r.to_string()).collect();
     while rows.last().is_some_and(|r| r.is_empty()) {
         rows.pop();
-    }
-    while rows.first().is_some_and(|r| r.is_empty()) {
-        rows.remove(0);
     }
     let width = rows.iter().map(|r| r.chars().count()).max().unwrap_or(0);
     let mut fixed = 0;
@@ -471,5 +641,17 @@ pub fn tile_height(heightmap: &str, x: i64, y: i64) -> Option<f64> {
         '0'..='9' => Some((c as u8 - b'0') as f64),
         'a'..='w' => Some((c as u8 - b'a' + 10) as f64),
         _ => None,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn floor_normalization_preserves_coordinates() {
+        assert_eq!(normalize_heightmap("01\r\n2x\n"), ("01\r2x".into(), 0));
+        assert_eq!(normalize_heightmap("\n01\n2"), ("xx\r01\r2x".into(), 0));
+        assert_eq!(normalize_heightmap("0y"), ("0x".into(), 1));
+        assert_eq!(tile_height("01\r2w", 1, 1), Some(32.0));
     }
 }

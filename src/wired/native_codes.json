@@ -1,0 +1,818 @@
+{
+  "wf_act_give_currency": [
+    1,
+    45
+  ],
+  "wf_act_give_furni": [
+    1,
+    46
+  ],
+  "wf_act_init_transaction": [
+    1,
+    47
+  ],
+  "wf_act_cancel_transaction": [
+    1,
+    48
+  ],
+  "wf_cnd_chest_has_items": [
+    2,
+    45
+  ],
+  "wf_cnd_chest_has_item_type": [
+    2,
+    46
+  ],
+  "wf_trg_transaction_complete": [
+    0,
+    25
+  ],
+  "wf_trg_transaction_fail": [
+    0,
+    26
+  ],
+  "wf_xtra_scan_chest_furni_by_type": [
+    4,
+    18
+  ],
+  "wf_xtra_custom_contract": [
+    4,
+    20
+  ],
+  "wf_act_progress_ach": [
+    1,
+    51
+  ],
+  "wf_act_give_effect": [
+    1,
+    52
+  ],
+  "wf_act_override_height": [
+    1,
+    53
+  ],
+  "wf_act_progress_reward_track": [
+    1,
+    58
+  ],
+  "wf_act_reset_reward_track": [
+    1,
+    59
+  ],
+  "wf_act_set_visibility": [
+    1,
+    61
+  ],
+  "wf_act_set_highlight": [
+    1,
+    62
+  ],
+  "wf_act_send_message": [
+    1,
+    63
+  ],
+  "wf_act_send_dataframe": [
+    1,
+    64
+  ],
+  "wf_trg_room_initializes": [
+    0,
+    28
+  ],
+  "wf_trg_receive_message": [
+    0,
+    29
+  ],
+  "wf_trg_receive_dataframe": [
+    0,
+    30
+  ],
+  "wf_cnd_user_level": [
+    2,
+    44
+  ],
+  "wf_xtra_var_share": [
+    4,
+    1003
+  ],
+  "wf_xtra_var_import": [
+    4,
+    1004
+  ],
+  "wf_xtra_var_leaderboard": [
+    4,
+    1005
+  ],
+  "wf_xtra_global_placeholder": [
+    4,
+    2000
+  ],
+  "wf_xtra_achievement_enabler": [
+    4,
+    2001
+  ],
+  "wf_xtra_var_web_api": [
+    4,
+    2002
+  ],
+  "wf_xtra_link_speaker": [
+    4,
+    2003
+  ],
+  "wf_var_dailytask": [
+    5,
+    8
+  ],
+  "wf_var_pointer": [
+    5,
+    9
+  ],
+  "wf_act_adjust_clock": [
+    1,
+    38
+  ],
+  "wf_act_bot_clothes": [
+    1,
+    26
+  ],
+  "wf_act_bot_follow_avatar": [
+    1,
+    25
+  ],
+  "wf_act_bot_give_handitem": [
+    1,
+    24
+  ],
+  "wf_act_bot_move": [
+    1,
+    22
+  ],
+  "wf_act_bot_talk": [
+    1,
+    23
+  ],
+  "wf_act_bot_talk_to_avatar": [
+    1,
+    27
+  ],
+  "wf_act_bot_teleport": [
+    1,
+    21
+  ],
+  "wf_act_call_stacks": [
+    1,
+    18
+  ],
+  "wf_act_change_var_val": [
+    1,
+    41
+  ],
+  "wf_act_chase": [
+    1,
+    11
+  ],
+  "wf_act_click_conf": [
+    1,
+    54
+  ],
+  "wf_act_control_clock": [
+    1,
+    28
+  ],
+  "wf_act_flee": [
+    1,
+    12
+  ],
+  "wf_act_freeze": [
+    1,
+    31
+  ],
+  "wf_act_furni_to_furni": [
+    1,
+    34
+  ],
+  "wf_act_furni_to_user": [
+    1,
+    35
+  ],
+  "wf_act_give_reward": [
+    1,
+    17
+  ],
+  "wf_act_give_score": [
+    1,
+    6
+  ],
+  "wf_act_give_score_tm": [
+    1,
+    14
+  ],
+  "wf_act_give_var": [
+    1,
+    39
+  ],
+  "wf_act_join_team": [
+    1,
+    9
+  ],
+  "wf_act_kick_user": [
+    1,
+    19
+  ],
+  "wf_act_leave_team": [
+    1,
+    10
+  ],
+  "wf_act_log": [
+    1,
+    49
+  ],
+  "wf_act_match_to_sshot": [
+    1,
+    3
+  ],
+  "wf_act_move_furni_as_group": [
+    1,
+    57
+  ],
+  "wf_act_move_furni_to": [
+    1,
+    16
+  ],
+  "wf_act_move_rotate": [
+    1,
+    4
+  ],
+  "wf_act_move_rotate_user": [
+    1,
+    42
+  ],
+  "wf_act_move_to_dir": [
+    1,
+    13
+  ],
+  "wf_act_mute_triggerer": [
+    1,
+    20
+  ],
+  "wf_act_neg_call_stacks": [
+    1,
+    36
+  ],
+  "wf_act_neg_log": [
+    1,
+    50
+  ],
+  "wf_act_neg_send_signal": [
+    1,
+    37
+  ],
+  "wf_act_place_furni": [
+    1,
+    55
+  ],
+  "wf_act_rel_mov": [
+    1,
+    33
+  ],
+  "wf_act_remove_furni": [
+    1,
+    56
+  ],
+  "wf_act_remove_var": [
+    1,
+    40
+  ],
+  "wf_act_reset_timers": [
+    1,
+    1
+  ],
+  "wf_act_send_signal": [
+    1,
+    30
+  ],
+  "wf_act_set_altitude": [
+    1,
+    29
+  ],
+  "wf_act_show_message": [
+    1,
+    7
+  ],
+  "wf_act_teleport_to": [
+    1,
+    8
+  ],
+  "wf_act_teleport_to_room": [
+    1,
+    44
+  ],
+  "wf_act_toggle_state": [
+    1,
+    0
+  ],
+  "wf_act_toggle_to_rnd": [
+    1,
+    15
+  ],
+  "wf_act_unfreeze": [
+    1,
+    32
+  ],
+  "wf_act_user_to_furni": [
+    1,
+    43
+  ],
+  "wf_cnd_actor_dir": [
+    2,
+    37
+  ],
+  "wf_cnd_actor_in_group": [
+    2,
+    10
+  ],
+  "wf_cnd_actor_in_team": [
+    2,
+    6
+  ],
+  "wf_cnd_counter_time_matches": [
+    2,
+    35
+  ],
+  "wf_cnd_date_rng_active": [
+    2,
+    24
+  ],
+  "wf_cnd_furnis_hv_avtrs": [
+    2,
+    1
+  ],
+  "wf_cnd_has_altitude": [
+    2,
+    36
+  ],
+  "wf_cnd_has_furni_on": [
+    2,
+    7
+  ],
+  "wf_cnd_has_handitem": [
+    2,
+    25
+  ],
+  "wf_cnd_has_var": [
+    2,
+    40
+  ],
+  "wf_cnd_match_date": [
+    2,
+    29
+  ],
+  "wf_cnd_match_snapshot": [
+    2,
+    0
+  ],
+  "wf_cnd_match_time": [
+    2,
+    28
+  ],
+  "wf_cnd_neg_has_var": [
+    2,
+    41
+  ],
+  "wf_cnd_not_furni_on": [
+    2,
+    18
+  ],
+  "wf_cnd_not_has_handitem": [
+    2,
+    30
+  ],
+  "wf_cnd_not_hv_avtrs": [
+    2,
+    14
+  ],
+  "wf_cnd_not_in_group": [
+    2,
+    21
+  ],
+  "wf_cnd_not_in_team": [
+    2,
+    17
+  ],
+  "wf_cnd_not_match_snap": [
+    2,
+    13
+  ],
+  "wf_cnd_not_stuff_is": [
+    2,
+    19
+  ],
+  "wf_cnd_not_trggrer_on": [
+    2,
+    15
+  ],
+  "wf_cnd_not_triggerer_match": [
+    2,
+    27
+  ],
+  "wf_cnd_not_user_count": [
+    2,
+    16
+  ],
+  "wf_cnd_not_user_performs_action": [
+    2,
+    33
+  ],
+  "wf_cnd_not_wearing_b": [
+    2,
+    22
+  ],
+  "wf_cnd_not_wearing_fx": [
+    2,
+    23
+  ],
+  "wf_cnd_slc_quantity": [
+    2,
+    38
+  ],
+  "wf_cnd_stuff_is": [
+    2,
+    8
+  ],
+  "wf_cnd_team_has_rank": [
+    2,
+    31
+  ],
+  "wf_cnd_team_has_score": [
+    2,
+    34
+  ],
+  "wf_cnd_time_less_than": [
+    2,
+    4
+  ],
+  "wf_cnd_time_more_than": [
+    2,
+    3
+  ],
+  "wf_cnd_trggrer_on_frn": [
+    2,
+    2
+  ],
+  "wf_cnd_triggerer_match": [
+    2,
+    26
+  ],
+  "wf_cnd_user_count_in": [
+    2,
+    5
+  ],
+  "wf_cnd_user_performs_action": [
+    2,
+    32
+  ],
+  "wf_cnd_valid_moves": [
+    2,
+    39
+  ],
+  "wf_cnd_var_age_match": [
+    2,
+    43
+  ],
+  "wf_cnd_var_val_match": [
+    2,
+    42
+  ],
+  "wf_cnd_wearing_badge": [
+    2,
+    11
+  ],
+  "wf_cnd_wearing_effect": [
+    2,
+    12
+  ],
+  "wf_slc_furni_altitude": [
+    3,
+    16
+  ],
+  "wf_slc_furni_area": [
+    3,
+    7
+  ],
+  "wf_slc_furni_bytype": [
+    3,
+    0
+  ],
+  "wf_slc_furni_neighborhood": [
+    3,
+    6
+  ],
+  "wf_slc_furni_onfurni": [
+    3,
+    4
+  ],
+  "wf_slc_furni_picks": [
+    3,
+    1
+  ],
+  "wf_slc_furni_signal": [
+    3,
+    5
+  ],
+  "wf_slc_furni_with_var": [
+    3,
+    17
+  ],
+  "wf_slc_remote": [
+    3,
+    19
+  ],
+  "wf_slc_users_area": [
+    3,
+    13
+  ],
+  "wf_slc_users_byaction": [
+    3,
+    9
+  ],
+  "wf_slc_users_byname": [
+    3,
+    11
+  ],
+  "wf_slc_users_bytype": [
+    3,
+    2
+  ],
+  "wf_slc_users_group": [
+    3,
+    15
+  ],
+  "wf_slc_users_handitem": [
+    3,
+    14
+  ],
+  "wf_slc_users_neighborhood": [
+    3,
+    12
+  ],
+  "wf_slc_users_onfurni": [
+    3,
+    8
+  ],
+  "wf_slc_users_signal": [
+    3,
+    10
+  ],
+  "wf_slc_users_team": [
+    3,
+    3
+  ],
+  "wf_slc_users_with_var": [
+    3,
+    18
+  ],
+  "wf_trg_at_given_time": [
+    0,
+    3
+  ],
+  "wf_trg_at_time_long": [
+    0,
+    3
+  ],
+  "wf_trg_bot_reached_avtr": [
+    0,
+    14
+  ],
+  "wf_trg_bot_reached_stf": [
+    0,
+    13
+  ],
+  "wf_trg_click_furni": [
+    0,
+    18
+  ],
+  "wf_trg_click_tile": [
+    0,
+    21
+  ],
+  "wf_trg_click_user": [
+    0,
+    24
+  ],
+  "wf_trg_clock_counter": [
+    0,
+    15
+  ],
+  "wf_trg_collision": [
+    0,
+    11
+  ],
+  "wf_trg_enter_room": [
+    0,
+    7
+  ],
+  "wf_trg_game_ends": [
+    0,
+    9
+  ],
+  "wf_trg_game_starts": [
+    0,
+    8
+  ],
+  "wf_trg_leave_room": [
+    0,
+    23
+  ],
+  "wf_trg_period_long": [
+    0,
+    12
+  ],
+  "wf_trg_period_short": [
+    0,
+    19
+  ],
+  "wf_trg_periodically": [
+    0,
+    6
+  ],
+  "wf_trg_recv_signal": [
+    0,
+    17
+  ],
+  "wf_trg_says_something": [
+    0,
+    0
+  ],
+  "wf_trg_score_achieved": [
+    0,
+    10
+  ],
+  "wf_trg_state_changed": [
+    0,
+    4
+  ],
+  "wf_trg_stuff_state": [
+    0,
+    20
+  ],
+  "wf_trg_user_performs_action": [
+    0,
+    16
+  ],
+  "wf_trg_var_changed": [
+    0,
+    22
+  ],
+  "wf_trg_walks_off_furni": [
+    0,
+    2
+  ],
+  "wf_trg_walks_on_furni": [
+    0,
+    1
+  ],
+  "wf_var_context": [
+    5,
+    3
+  ],
+  "wf_var_echo": [
+    5,
+    7
+  ],
+  "wf_var_furni": [
+    5,
+    0
+  ],
+  "wf_var_quest": [
+    5,
+    5
+  ],
+  "wf_var_quest_chain": [
+    5,
+    6
+  ],
+  "wf_var_reference": [
+    5,
+    4
+  ],
+  "wf_var_room": [
+    5,
+    2
+  ],
+  "wf_var_user": [
+    5,
+    1
+  ],
+  "wf_xtra_anim_time": [
+    4,
+    9
+  ],
+  "wf_xtra_exec_in_order": [
+    4,
+    17
+  ],
+  "wf_xtra_execution_limit": [
+    4,
+    5
+  ],
+  "wf_xtra_filter_furni": [
+    4,
+    10
+  ],
+  "wf_xtra_filter_furni_by_var": [
+    4,
+    12
+  ],
+  "wf_xtra_filter_users": [
+    4,
+    11
+  ],
+  "wf_xtra_filter_users_by_var": [
+    4,
+    13
+  ],
+  "wf_xtra_mov_carry_users": [
+    4,
+    8
+  ],
+  "wf_xtra_mov_curve": [
+    4,
+    22
+  ],
+  "wf_xtra_mov_no_animation": [
+    4,
+    6
+  ],
+  "wf_xtra_mov_physics": [
+    4,
+    7
+  ],
+  "wf_xtra_or_eval": [
+    4,
+    0
+  ],
+  "wf_xtra_random": [
+    4,
+    1
+  ],
+  "wf_xtra_rotate_to_dir": [
+    4,
+    21
+  ],
+  "wf_xtra_text_input_variable": [
+    4,
+    16
+  ],
+  "wf_xtra_text_output_furni_name": [
+    4,
+    19
+  ],
+  "wf_xtra_text_output_username": [
+    4,
+    14
+  ],
+  "wf_xtra_text_output_variable": [
+    4,
+    15
+  ],
+  "wf_xtra_unseen": [
+    4,
+    2
+  ],
+  "wf_xtra_var_fx_boss": [
+    4,
+    1204
+  ],
+  "wf_xtra_var_fx_health": [
+    4,
+    1200
+  ],
+  "wf_xtra_var_fx_level": [
+    4,
+    1202
+  ],
+  "wf_xtra_var_fx_number": [
+    4,
+    1205
+  ],
+  "wf_xtra_var_fx_progress": [
+    4,
+    1201
+  ],
+  "wf_xtra_var_fx_status": [
+    4,
+    1203
+  ],
+  "wf_xtra_var_lvlup_system": [
+    4,
+    1001
+  ],
+  "wf_xtra_var_text_connector": [
+    4,
+    1000
+  ],
+  "wf_xtra_var_time_util": [
+    4,
+    1002
+  ]
+}

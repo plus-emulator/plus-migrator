@@ -18,7 +18,13 @@ fn forum_level(v: &str) -> i64 {
 }
 
 fn post_state(state: i64) -> i64 {
-    if state >= 20 { 20 } else if state >= 10 { 10 } else { 0 }
+    if state >= 20 {
+        20
+    } else if state >= 10 {
+        10
+    } else {
+        0
+    }
 }
 
 pub async fn run(ctx: Arc<Ctx>) -> Result<()> {
@@ -26,12 +32,42 @@ pub async fn run(ctx: Arc<Ctx>) -> Result<()> {
         return Ok(());
     }
     let gw = ctx
-        .writer("groups", &["id", "name", "desc", "badge", "owner_id", "created", "room_id", "state", "colour1", "colour2", "admindeco", "forum_enabled"])
+        .writer(
+            "groups",
+            &[
+                "id",
+                "name",
+                "desc",
+                "badge",
+                "owner_id",
+                "created",
+                "room_id",
+                "state",
+                "colour1",
+                "colour2",
+                "admindeco",
+                "forum_enabled",
+            ],
+        )
         .await?;
     let fw = ctx
-        .writer("group_forums", &["group_id", "read_permission", "post_permission", "thread_permission", "moderate_permission", "message_count"])
+        .writer(
+            "group_forums",
+            &[
+                "group_id",
+                "read_permission",
+                "post_permission",
+                "thread_permission",
+                "moderate_permission",
+                "message_count",
+            ],
+        )
         .await?;
-    let guilds = query_rows(&ctx.src, "SELECT t.* FROM guilds t JOIN users u ON u.id = t.user_id").await?;
+    let guilds = query_rows(
+        &ctx.src,
+        "SELECT t.* FROM guilds t JOIN users u ON u.id = t.user_id",
+    )
+    .await?;
     let mut forums = Vec::new();
     for r in &guilds {
         let id = r.i64("id");
@@ -56,12 +92,22 @@ pub async fn run(ctx: Arc<Ctx>) -> Result<()> {
                 b(r.bool("forum")),
             ])
             .await?;
-        forums.push((id, forum_level(&r.str("read_forum")), forum_level(&r.str("post_messages")), forum_level(&r.str("post_threads")), forum_level(&r.str("mod_forum")).max(2)));
+        forums.push((
+            id,
+            forum_level(&r.str("read_forum")),
+            forum_level(&r.str("post_messages")),
+            forum_level(&r.str("post_threads")),
+            forum_level(&r.str("mod_forum")).max(2),
+        ));
     }
     gw.finish().await?;
 
-    let mw = ctx.writer_ignore("group_memberships", &["group_id", "user_id", "rank"]).await?;
-    let rw = ctx.writer_ignore("group_requests", &["group_id", "user_id"]).await?;
+    let mw = ctx
+        .writer_ignore("group_memberships", &["group_id", "user_id", "rank"])
+        .await?;
+    let rw = ctx
+        .writer_ignore("group_requests", &["group_id", "user_id"])
+        .await?;
     let mut rows = RowStream::open(
         &ctx.src,
         "SELECT t.* FROM guilds_members t JOIN guilds g ON g.id = t.guild_id JOIN users u ON u.id = t.user_id JOIN users o ON o.id = g.user_id",
@@ -87,12 +133,25 @@ pub async fn run(ctx: Arc<Ctx>) -> Result<()> {
             "SELECT t.* FROM guilds_forums_threads t JOIN guilds g ON g.id = t.guild_id JOIN users u ON u.id = t.opener_id",
         )
         .await?;
-        let thread_group: HashMap<i64, i64> = threads.iter().map(|t| (t.i64("id"), t.i64("guild_id"))).collect();
+        let thread_group: HashMap<i64, i64> = threads
+            .iter()
+            .map(|t| (t.i64("id"), t.i64("guild_id")))
+            .collect();
         let mut thread_stats: HashMap<i64, (i64, i64)> = HashMap::new();
         let w = ctx
             .writer(
                 "group_forum_messages",
-                &["group_id", "id", "thread_id", "message_index", "author_id", "body", "created_at", "state", "moderator_id"],
+                &[
+                    "group_id",
+                    "id",
+                    "thread_id",
+                    "message_index",
+                    "author_id",
+                    "body",
+                    "created_at",
+                    "state",
+                    "moderator_id",
+                ],
             )
             .await?;
         let mut rows = RowStream::open(
@@ -102,13 +161,25 @@ pub async fn run(ctx: Arc<Ctx>) -> Result<()> {
         .await?;
         while let Some(r) = rows.next().await? {
             let thread = r.i64("thread_id");
-            let Some(&group) = thread_group.get(&thread) else { continue };
+            let Some(&group) = thread_group.get(&thread) else {
+                continue;
+            };
             let id = group_count.entry(group).or_default();
             *id += 1;
             let stats = thread_stats.entry(thread).or_default();
             let created = unix_dt(r.i64("created_at").max(1));
             w.sink
-                .send(vec![i(group), i(*id), i(thread), i(stats.0), i(r.i64("user_id")), s(r.text("message")), created, i(post_state(r.i64("state"))), i(r.i64("admin_id"))])
+                .send(vec![
+                    i(group),
+                    i(*id),
+                    i(thread),
+                    i(stats.0),
+                    i(r.i64("user_id")),
+                    s(r.text("message")),
+                    created,
+                    i(post_state(r.i64("state"))),
+                    i(r.i64("admin_id")),
+                ])
                 .await?;
             stats.0 += 1;
             stats.1 = *id;
@@ -118,7 +189,20 @@ pub async fn run(ctx: Arc<Ctx>) -> Result<()> {
         let tw = ctx
             .writer(
                 "group_forum_threads",
-                &["id", "group_id", "author_id", "title", "pinned", "locked", "created_at", "updated_at", "message_count", "last_message_id", "state", "moderator_id"],
+                &[
+                    "id",
+                    "group_id",
+                    "author_id",
+                    "title",
+                    "pinned",
+                    "locked",
+                    "created_at",
+                    "updated_at",
+                    "message_count",
+                    "last_message_id",
+                    "state",
+                    "moderator_id",
+                ],
             )
             .await?;
         for t in &threads {
@@ -145,7 +229,14 @@ pub async fn run(ctx: Arc<Ctx>) -> Result<()> {
     }
     for (g, read, post, thread, moderate) in forums {
         fw.sink
-            .send(vec![i(g), i(read), i(post), i(thread), i(moderate), i(group_count.get(&g).copied().unwrap_or(0))])
+            .send(vec![
+                i(g),
+                i(read),
+                i(post),
+                i(thread),
+                i(moderate),
+                i(group_count.get(&g).copied().unwrap_or(0)),
+            ])
             .await?;
     }
     fw.finish().await?;

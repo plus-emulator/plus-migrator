@@ -2,12 +2,10 @@
 //! reader for source rows, and a pipelined multi-row INSERT writer for the
 //! target.
 //!
-//! Writes go through the text protocol as extended INSERTs (several MB per
-//! statement) inside one transaction per batch, with foreign key and unique
-//! checks disabled. That is the fastest way to load MariaDB short of LOAD DATA,
-//! and it lets steps run concurrently without caring about insert order.
-//! Referential integrity is instead enforced by the steps themselves (orphans
-//! are filtered at the source) and checked afterwards by `verify`.
+//! Extended INSERT batches are autocommitted. Unique constraints stay enabled;
+//! foreign keys are temporarily disabled to permit parallel import and explicitly
+//! audited afterwards. A failed write leaves a partial staging database, never a
+//! hotel ready for cutover. Preflight runs the same encoders without SQL writes.
 
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
@@ -23,7 +21,8 @@ use tokio::task::JoinHandle;
 const BATCH_BYTES: usize = 4 * 1024 * 1024;
 
 pub fn pool(url: &str, max: usize) -> Result<Pool> {
-    let opts = Opts::from_url(url).with_context(|| format!("invalid database url: {url}"))?;
+    let opts = Opts::from_url(url)
+        .with_context(|| "invalid database URL (credentials omitted)".to_string())?;
     let constraints = PoolConstraints::new(1, max.max(1)).context("pool size")?;
     let builder = OptsBuilder::from_opts(opts)
         .pool_opts(PoolOpts::default().with_constraints(constraints))
@@ -38,7 +37,7 @@ pub fn pool(url: &str, max: usize) -> Result<Pool> {
 pub async fn bulk_conn(pool: &Pool) -> Result<Conn> {
     let mut conn = pool.get_conn().await?;
     conn.query_drop(
-        "SET SESSION foreign_key_checks = 0, unique_checks = 0, \
+        "SET SESSION foreign_key_checks = 0, unique_checks = 1, \
          sql_mode = 'STRICT_ALL_TABLES,NO_AUTO_VALUE_ON_ZERO,NO_ENGINE_SUBSTITUTION', \
          time_zone = '+00:00'",
     )
@@ -83,13 +82,26 @@ impl Schema {
                 // TEXT/LONGTEXT report byte limits; only bound short columns.
                 (matches!(data_type.as_str(), "char" | "varchar")).then_some(n as usize)
             });
-            tables.entry(r.str("table_name").to_ascii_lowercase()).or_default().push(ColumnInfo {
-                name: r.str("column_name"),
-                generated: extra.contains("generated") || extra.contains("virtual") || extra.contains("stored"),
-                max_chars,
-            });
+            tables
+                .entry(r.str("table_name").to_ascii_lowercase())
+                .or_default()
+                .push(ColumnInfo {
+                    name: r.str("column_name"),
+                    generated: extra.contains("generated")
+                        || extra.contains("virtual")
+                        || extra.contains("stored"),
+                    max_chars,
+                });
         }
         Ok(Schema { tables })
+    }
+
+    pub fn widen(&mut self, table: &str, column: &str, size: usize) {
+        if let Some(columns) = self.tables.get_mut(table)
+            && let Some(col) = columns.iter_mut().find(|c| c.name == column)
+        {
+            col.max_chars = col.max_chars.map(|n| n.max(size));
+        }
     }
 
     pub fn has_table(&self, table: &str) -> bool {
@@ -97,14 +109,15 @@ impl Schema {
     }
 
     pub fn columns(&self, table: &str) -> Option<&[ColumnInfo]> {
-        self.tables.get(&table.to_ascii_lowercase()).map(Vec::as_slice)
+        self.tables
+            .get(&table.to_ascii_lowercase())
+            .map(Vec::as_slice)
     }
 
     pub fn has_column(&self, table: &str, column: &str) -> bool {
         self.columns(table)
             .is_some_and(|cols| cols.iter().any(|c| c.name.eq_ignore_ascii_case(column)))
     }
-
 }
 
 // ---------------------------------------------------------------------------
@@ -127,11 +140,28 @@ impl SrcRow {
             .enumerate()
             .map(|(i, c)| (c.name_str().to_ascii_lowercase(), i))
             .collect();
-        SrcRow { index: Arc::new(index), values: row.unwrap() }
+        SrcRow {
+            index: Arc::new(index),
+            values: row.unwrap(),
+        }
     }
 
     fn with_index(index: Arc<HashMap<String, usize>>, row: Row) -> SrcRow {
-        SrcRow { index, values: row.unwrap() }
+        SrcRow {
+            index,
+            values: row.unwrap(),
+        }
+    }
+
+    fn validate_utf8(&self) -> Result<()> {
+        for value in &self.values {
+            if let Value::Bytes(bytes) = value {
+                std::str::from_utf8(bytes).context(
+                    "source returned non-UTF8 byte data; an explicit binary adapter is required",
+                )?;
+            }
+        }
+        Ok(())
     }
 
     pub fn raw(&self, col: &str) -> Option<&Value> {
@@ -160,13 +190,9 @@ impl SrcRow {
         self.opt_str(col).unwrap_or_default()
     }
 
-    /// User-facing text, with latin1 mojibake repaired (see `text::repair`).
+    /// User-facing text, preserving the source string without guessing its encoding.
     pub fn text(&self, col: &str) -> String {
-        let raw = self.str(col);
-        match crate::text::repair(&raw) {
-            std::borrow::Cow::Borrowed(_) => raw,
-            std::borrow::Cow::Owned(fixed) => fixed,
-        }
+        self.str(col)
     }
 
     pub fn opt_i64(&self, col: &str) -> Option<i64> {
@@ -178,7 +204,9 @@ impl SrcRow {
             Value::Double(n) => Some(*n as i64),
             Value::Bytes(b) => {
                 let s = std::str::from_utf8(b).ok()?.trim();
-                s.parse::<i64>().ok().or_else(|| s.parse::<f64>().ok().map(|f| f as i64))
+                s.parse::<i64>()
+                    .ok()
+                    .or_else(|| s.parse::<f64>().ok().map(|f| f as i64))
             }
             _ => None,
         }
@@ -206,12 +234,14 @@ impl SrcRow {
     pub fn bool(&self, col: &str) -> bool {
         match self.raw(col) {
             Some(Value::Bytes(b)) => {
-                matches!(std::str::from_utf8(b).unwrap_or("").trim(), "1" | "true" | "TRUE" | "yes")
+                matches!(
+                    std::str::from_utf8(b).unwrap_or("").trim(),
+                    "1" | "true" | "TRUE" | "yes"
+                )
             }
             _ => self.i64(col) != 0,
         }
     }
-
 }
 
 /// Rows streamed from the source by a background task, so reading, transforming
@@ -235,7 +265,8 @@ impl RowStream {
                     r
                 }
                 Err(e) => {
-                    let _ = ready_tx.send(Err(anyhow::anyhow!("source query failed: {e}\n  {sql}")));
+                    let _ =
+                        ready_tx.send(Err(anyhow::anyhow!("source query failed: {e}\n  {sql}")));
                     return;
                 }
             };
@@ -254,13 +285,18 @@ impl RowStream {
                                 )
                             })
                             .clone();
-                        if tx.send(Ok(SrcRow::with_index(idx, row))).await.is_err() {
+                        let row = SrcRow::with_index(idx, row);
+                        let validated = row.validate_utf8().map(|()| row);
+                        let invalid = validated.is_err();
+                        if tx.send(validated).await.is_err() || invalid {
                             return;
                         }
                     }
                     Ok(None) => return,
                     Err(e) => {
-                        let _ = tx.send(Err(anyhow::anyhow!("reading source failed: {e}\n  {sql}"))).await;
+                        let _ = tx
+                            .send(Err(anyhow::anyhow!("reading source failed: {e}\n  {sql}")))
+                            .await;
                         return;
                     }
                 }
@@ -286,7 +322,10 @@ pub async fn query_rows(pool: &Pool, sql: &str) -> Result<Vec<SrcRow>> {
 
 pub async fn scalar_i64(pool: &Pool, sql: &str) -> Result<i64> {
     let mut conn = pool.get_conn().await?;
-    let v: Option<Value> = conn.query_first(sql).await.with_context(|| sql.to_string())?;
+    let v: Option<Value> = conn
+        .query_first(sql)
+        .await
+        .with_context(|| sql.to_string())?;
     Ok(match v {
         Some(Value::Int(n)) => n,
         Some(Value::UInt(n)) => n as i64,
@@ -312,15 +351,34 @@ pub struct Sink {
     tx: mpsc::Sender<Vec<Value>>,
     width: usize,
     table: String,
+    limits: Vec<Option<usize>>,
+    columns: Vec<String>,
 }
 
 impl Sink {
     pub async fn send(&self, row: Vec<Value>) -> Result<()> {
-        debug_assert_eq!(row.len(), self.width, "row width mismatch for {}", self.table);
+        debug_assert_eq!(
+            row.len(),
+            self.width,
+            "row width mismatch for {}",
+            self.table
+        );
         if row.len() != self.width {
-            bail!("row for {} has {} values, expected {}", self.table, row.len(), self.width);
+            bail!(
+                "row for {} has {} values, expected {}",
+                self.table,
+                row.len(),
+                self.width
+            );
         }
-        self.tx.send(row).await.map_err(|_| anyhow::anyhow!("writer for {} stopped", self.table))
+        for ((value, limit), column) in row.iter().zip(&self.limits).zip(&self.columns) {
+            validate_value(value, *limit)
+                .with_context(|| format!("value rejected for {}.{column}", self.table))?;
+        }
+        self.tx
+            .send(row)
+            .await
+            .map_err(|_| anyhow::anyhow!("writer for {} stopped", self.table))
     }
 }
 
@@ -339,6 +397,7 @@ impl Writer {
         table: &str,
         columns: &[&str],
         ignore: bool,
+        validate_only: bool,
     ) -> Result<Writer> {
         let infos = schema
             .columns(table)
@@ -356,13 +415,28 @@ impl Writer {
         }
 
         let header = format!(
-            "INSERT {}INTO `{}` ({}) VALUES ",
-            if ignore { "IGNORE " } else { "" },
+            "INSERT INTO `{}` ({}) VALUES ",
             table,
-            columns.iter().map(|c| format!("`{c}`")).collect::<Vec<_>>().join(", ")
+            columns
+                .iter()
+                .map(|c| format!("`{c}`"))
+                .collect::<Vec<_>>()
+                .join(", ")
         );
         let (tx, mut rx) = mpsc::channel::<Vec<Value>>(8192);
-        let conn = bulk_conn(pool).await?;
+        let conn = if validate_only {
+            None
+        } else {
+            Some(bulk_conn(pool).await?)
+        };
+        let suffix = if ignore {
+            format!(" ON DUPLICATE KEY UPDATE `{0}` = `{0}`", columns[0])
+        } else {
+            String::new()
+        };
+        let column_names: Vec<String> = columns.iter().map(|s| s.to_string()).collect();
+        let sink_limits = limits.clone();
+        let sink_columns = column_names.clone();
         let table_name = table.to_string();
 
         let handle = tokio::spawn(async move {
@@ -382,25 +456,45 @@ impl Writer {
                     if i > 0 {
                         buf.push(',');
                     }
-                    push_sql_value(&mut buf, v, limits[i]);
+                    validate_value(v, limits[i]).with_context(|| {
+                        format!(
+                            "value rejected for {}.{} (row {})",
+                            table_name,
+                            column_names[i],
+                            total + pending as u64 + 1
+                        )
+                    })?;
+                    push_sql_value(&mut buf, v, None);
                 }
                 buf.push(')');
                 pending += 1;
                 if buf.len() >= BATCH_BYTES {
-                    flush(&mut conn, &buf, &table_name).await?;
+                    if let Some(conn) = &mut conn {
+                        buf.push_str(&suffix);
+                        flush(conn, &buf, &table_name).await?;
+                    }
                     total += pending as u64;
                     pending = 0;
                 }
             }
             if pending > 0 {
-                flush(&mut conn, &buf, &table_name).await?;
+                if let Some(conn) = &mut conn {
+                    buf.push_str(&suffix);
+                    flush(conn, &buf, &table_name).await?;
+                }
                 total += pending as u64;
             }
             Ok(total)
         });
 
         Ok(Writer {
-            sink: Sink { tx, width: columns.len(), table: table.to_string() },
+            sink: Sink {
+                tx,
+                width: columns.len(),
+                table: table.to_string(),
+                limits: sink_limits,
+                columns: sink_columns,
+            },
             handle,
         })
     }
@@ -413,50 +507,42 @@ impl Writer {
 }
 
 async fn flush(conn: &mut Conn, sql: &str, table: &str) -> Result<()> {
-    conn.query_drop(sql).await.map_err(|e| {
-        let preview: String = sql.chars().take(600).collect();
-        anyhow::anyhow!("insert into `{table}` failed: {e}\n  statement starts: {preview}")
+    conn.query_drop(sql).await.map_err(|e| match e {
+        mysql_async::Error::Server(e) => anyhow::anyhow!(
+            "insert into `{table}` failed: MySQL {} SQLSTATE {} (row values omitted)",
+            e.code,
+            e.state
+        ),
+        _ => anyhow::anyhow!(
+            "insert into `{table}` failed: connection/protocol error (details omitted)"
+        ),
     })
 }
 
-/// Appends `v` as an SQL literal. Strings longer than `limit` characters are cut
-/// to fit (the column would otherwise reject them under strict mode); returns
-/// whether that happened.
-fn push_sql_value(buf: &mut String, v: &Value, limit: Option<usize>) -> bool {
+/// Reject data the destination cannot represent; never shorten a value to make an insert pass.
+fn validate_value(v: &Value, limit: Option<usize>) -> Result<()> {
     match v {
-        Value::NULL => buf.push_str("NULL"),
-        Value::Int(n) => {
-            use std::fmt::Write;
-            let _ = write!(buf, "{n}");
+        Value::Bytes(bytes) => {
+            let text = std::str::from_utf8(bytes).context("invalid UTF-8")?;
+            if let Some(limit) = limit
+                && text.chars().count() > limit
+            {
+                bail!("text exceeds destination character limit {limit}");
+            }
         }
-        Value::UInt(n) => {
-            use std::fmt::Write;
-            let _ = write!(buf, "{n}");
-        }
-        Value::Float(f) => push_float(buf, *f as f64),
-        Value::Double(f) => push_float(buf, *f),
-        Value::Bytes(b) => {
-            let s = String::from_utf8_lossy(b);
-            let (s, cut) = match limit {
-                Some(max) if s.chars().count() > max => {
-                    (std::borrow::Cow::Owned(s.chars().take(max).collect::<String>()), true)
-                }
-                _ => (s, false),
-            };
-            push_escaped(buf, &s);
-            return cut;
-        }
-        other => buf.push_str(&other.as_sql(false)),
+        Value::Float(n) if !n.is_finite() => bail!("non-finite number"),
+        Value::Double(n) if !n.is_finite() => bail!("non-finite number"),
+        _ => {}
     }
-    false
+    Ok(())
 }
 
-fn push_float(buf: &mut String, f: f64) {
-    use std::fmt::Write;
-    if f.is_finite() {
-        let _ = write!(buf, "{f}");
-    } else {
-        buf.push('0');
+fn push_sql_value(buf: &mut String, v: &Value, _limit: Option<usize>) {
+    match v {
+        Value::Bytes(bytes) => {
+            push_escaped(buf, std::str::from_utf8(bytes).expect("validated UTF-8"))
+        }
+        _ => buf.push_str(&v.as_sql(false)),
     }
 }
 
@@ -524,12 +610,22 @@ pub struct MultiWriter {
 }
 
 impl MultiWriter {
-    pub async fn open(pool: &Pool, schema: &Schema, table: &str, columns: &[&str], n: usize) -> Result<MultiWriter> {
+    pub async fn open(
+        pool: &Pool,
+        schema: &Schema,
+        table: &str,
+        columns: &[&str],
+        n: usize,
+        validate_only: bool,
+    ) -> Result<MultiWriter> {
         let mut writers = Vec::with_capacity(n);
         for _ in 0..n.max(1) {
-            writers.push(Writer::open(pool, schema, table, columns, false).await?);
+            writers.push(Writer::open(pool, schema, table, columns, false, validate_only).await?);
         }
-        Ok(MultiWriter { writers, next: Default::default() })
+        Ok(MultiWriter {
+            writers,
+            next: Default::default(),
+        })
     }
 
     pub async fn send(&self, row: Vec<Value>) -> Result<()> {
@@ -543,5 +639,23 @@ impl MultiWriter {
             total += w.finish().await?;
         }
         Ok(total)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn rejects_loss_instead_of_truncating() {
+        assert!(validate_value(&s("é雪"), Some(2)).is_ok());
+        assert!(validate_value(&s("é雪!"), Some(2)).is_err());
+        assert!(validate_value(&Value::Bytes(vec![255]), None).is_err());
+        assert!(validate_value(&f(f64::NAN), None).is_err());
+    }
+    #[test]
+    fn strings_roundtrip_sql_escapes() {
+        let mut out = String::new();
+        push_sql_value(&mut out, &s("a'\\\n雪"), None);
+        assert_eq!(out, "'a\\'\\\\\\n雪'");
     }
 }

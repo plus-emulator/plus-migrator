@@ -1,57 +1,133 @@
 # plus-migrator
 
-Ports an Arcturus Morningstar 3.5.x or Polaris hotel into a fresh PlusEMU database:
-players, rooms, furniture, the hotel's own catalog, wired and more. Source ids are
-kept 1:1, so links between rows (and wired item picks) carry over untouched.
+Offline Arcturus-to-Plus conversion with preflight checks, a source recovery archive,
+and a compatibility report. **The production fixture is not ready for a lossless
+runtime cutover.** Unsupported interactions and source data stop a normal run;
+keeping their original rows in an archive does not make them work in Plus.
 
-## Usage
+The tested contracts are Morningstar `e33ac57a518d83afad5ad103599e8f3d03c37508`
+and PlusEMU dev `e3dc5f3437a78900d985821a13172db5d9051dd0`, with the companion
+`WiredFurniSnapshot.SkipStateRestore` and roller activation patches. A fork's schema/behavior can differ.
+Polaris WIRED now has 44 additional direct serializer converters. Full-hotel Polaris
+compatibility remains unverified; see [Polaris coverage](docs/polaris-wired.md).
+See [compatibility findings](docs/compatibility.md) and the
+[361-interaction inventory](docs/interaction-map.md).
 
-1. Create an empty database and import Plus's `Database/FreshInstall.sql` (PlusEMU `dev`).
-2. Stop the emulator and the CMS (`docker compose stop emulator cms-php` in plus-stack).
-3. Run:
+## Isolated rehearsal
+
+Use a separate database server with no access to the live hotel. Import an offline
+source dump into one database and the pinned Plus `Database/FreshInstall.sql` into
+another. Stop **all** writers to both staging databases during the run. The source
+connection only reads data and changes its own session settings.
+
+Apply [the companion snapshot patch](compat/plus-arcturus-snapshot.patch) to the
+pinned **staging** Plus checkout before building the validator. Also apply the
+[roller activation patch](compat/plus-roller-activation.patch): the pinned Plus
+legacy engine otherwise leaves rollers idle despite correct interaction mappings. The patch is also
+available in the local Plus branch `fix/arcturus-wired-snapshot-state` (`ba1a8e83`).
 
 ```bash
-cargo build --release
-./target/release/plus-migrate \
-  --source mysql://user:pass@host:3306/arcturus \
-  --target mysql://user:pass@host:3306/plus \
-  --furnidata /path/to/FurnitureData.json   # optional, recommended
+git -C /absolute/path/to/PlusEMU apply /absolute/path/to/plus-migrator/compat/plus-arcturus-snapshot.patch
+git -C /absolute/path/to/PlusEMU apply /absolute/path/to/plus-migrator/compat/plus-roller-activation.patch
 ```
 
-`--force` wipes a target that already has users. `--only users,rooms` runs selected steps.
-The source is only read. A 100k-user / 200k-room / 5M-item hotel migrates in about 80s.
+Build the migrator and the validator against that same Plus code:
 
-## What is migrated
+```bash
+cargo build --release --locked
+# Requires the .NET SDK specified by the target Plus checkout.
+dotnet build tests/PlusContract/PlusContract.csproj -p:PlusRoot=/absolute/path/to/PlusEMU
+```
 
-| Source | Plus |
-|---|---|
-| users, users_settings, users_currency | users, users_settings, user_statistics, user_info, user_currencies |
-| ranks (`permissions` / Polaris `permission_ranks`) | user_roles (by security level; VIP ranks -> vip roles) |
-| badges, effects, clothing, wardrobe, achievements | user_badges (+ badge_definitions), user_effects, user_clothing, user_wardrobe, user_achievements |
-| users_subscriptions (HC) | user_club_memberships, intervals, past paydays (no back-pay burst) |
-| friends, requests, ignores, favourites, saved searches, bans, room visits, chat logs, offline messages | their Plus tables |
-| rooms, custom floor plans, rights, bans, promotions, word filter, public rooms | rooms, room_models (`model_bc_<id>`), ... |
-| guilds, members, requests, forums | groups, group_memberships, group_requests, group_forum_* |
-| items_base | furniture (interaction types translated; `--furnidata` fills furnidata columns) |
-| catalog_pages, catalog_items | catalog_pages, page texts/images, catalog_offers, offer products, limited stock, bot presets |
-| items | items, plus gifts (user_presents), teleport links, group furni, moodlights, toners, jukeboxes and songs |
-| wired boxes | wired_item_configurations, reward claim history, Polaris room wired permissions |
-| bots, users_pets | bots, bots_speech, bots_petdata |
-| open/expired marketplace listings, uncollected sales | items back to the seller, credits paid to the seller |
+The `--wired-validator` argument must be an executable accepting JSONL on stdin.
+The generated `tests/PlusContract/bin/Debug/net10.0/PlusContract` apphost works with
+a normally installed .NET runtime. For a private SDK installation, set `DOTNET_ROOT`
+or use an executable wrapper that runs `dotnet /absolute/path/to/PlusContract.dll`.
 
-Anything that cannot be carried over is listed under `notes:` at the end of a run.
+Set `PLUS_MIGRATE_SOURCE` and `PLUS_MIGRATE_TARGET` privately to the staging MySQL
+URLs, then validate without changing the target:
 
-## Known limits
+```bash
+./target/release/plus-migrate \
+  --source-offline --dry-run \
+  --wired-validator /absolute/path/to/validate-wired \
+  --report /private/path/preflight.json
+```
 
-- Plus hard-codes a few furniture ids (pet food 320, saddles 4221/4450, the camera
-  photo item). Those target rows are kept, and source furni that collide get new ids.
-- Wired: every Arcturus 3.5.5 box is translated. Polaris boxes with a Plus
-  equivalent always become that box. 83 Polaris-only boxes and the shared ones keep
-  their settings. Other Polaris-only boxes start with Plus defaults (listed in notes).
-  Boxes Plus lacks (wf_blob, highscores, chests, ...) become plain furni.
-- Plus rewards only give badges and furni, so currency prizes in reward boxes are dropped (reported).
-- Polaris wired variables and monsterplant data are not migrated.
-- Passwords: `$2a$`/`$2b$` bcrypt is rewritten to `$2y$`. Legacy md5/sha hashes cannot log in through the CMS.
+For a write run, omit `--dry-run` and provide `--archive-dir /private/path/new-backup`.
+The archive directory must not already exist. `--force` permits replacing a populated
+staging database; it does not bypass compatibility checks. `--only` is rejected
+because independent partial migrations cannot safely preserve cross-table references.
 
-`src/wired/boxes.json` and `src/wired/polaris.json` are generated from the wired
-research map (source interaction -> Plus box, and Polaris field-copy specs).
+A diagnostic test may additionally use `--allow-incomplete`. It writes the
+representable subset so you can investigate problems, but **still exits nonzero**
+when blockers remain. Never use that result for cutover. Restore/recreate the staging
+target before retrying a failed write; writes are not a hotel-wide transaction.
+
+`--furnidata /path/to/FurnitureData.json` enriches furniture definitions. Retain the
+source client assets, badge images and camera/media files separately: a SQL dump
+does not contain these files.
+
+## Preservation and validation
+
+- Preflight runs the converters and string/schema checks before clearing tables.
+- Source and destination database identity are checked using server metadata,
+  including when different hostnames resolve to the same database.
+- All source **base tables**, including unknown tables, are saved with original
+  DDL and byte-preserving values before target writes. Views, triggers, routines,
+  events and external files need a separate backup; their presence is reported.
+- The JSON report inventories every source table, lists interactions and their
+  target mappings, reports remapped furniture IDs, and records blockers.
+- Wired uses Plus schema **2**, with owned editor parameters, source selectors,
+  selections, delays and saved snapshots. Each converted configuration must compile
+  through the actual Plus registry/projection. This verifies the storage contract;
+  it does not prove every in-room behavior is equivalent.
+- No string truncation, mojibake repair, default Wired reset, or ordinary
+  `INSERT IGNORE` is used to conceal conversion errors. Explicit duplicate handling
+  remains for sets such as badge definitions and symmetric links.
+- Post-write checks compare user/room identities, credits including marketplace
+  proceeds, currencies, badge ownership, model geometry and every declared foreign key.
+- The migrator widens wardrobe looks to 256 characters, mottos to `VARCHAR(127)` (preserving trailing
+  spaces), and bot/pet Z coordinates to
+  `DOUBLE`, matching the source values and Plus's runtime `double` coordinate types.
+
+Passwords, private messages and other personal data remain in the private source
+and recovery archive. Do not check dumps, archives or production JSONL into Git.
+Reports contain identifiers and schema/interaction names, and should also stay private.
+
+## Tests
+
+```bash
+cargo test --locked
+cargo clippy --locked --all-targets -- -D warnings
+PLUS_MIGRATE_CONTRACT_FIXTURES=/tmp/standard-boxes.jsonl \
+PLUS_MIGRATE_POLARIS_FIXTURES=/tmp/polaris-boxes.jsonl cargo test --locked
+/path/to/validate-wired < /tmp/standard-boxes.jsonl
+/path/to/validate-wired < /tmp/polaris-boxes.jsonl
+```
+
+The generated fixtures cover all 69 standard source Wired mapping entries and 44
+Polaris serializers. Selected Polaris cases also assert compiled runtime values. The
+production rehearsal additionally tested 280 configured standard boxes against Plus.
+The companion Plus patch has execution tests for both state-update paths and the
+single-snapshot fallback. See the findings for the limits of this evidence.
+
+For the isolated production fixture, core reconciliation can be repeated with:
+
+```bash
+python3 tests/reconcile.py --socket /path/to/isolated/mysql.sock \
+  --source arc_source --target plus_test
+```
+
+This read-only check compares known fields; passing it does not clear the separate
+compatibility report or certify every omitted source field.
+
+Rejection-path tests for the same disposable server (local test account without a password):
+
+```bash
+python3 tests/safety.py --socket /path/to/isolated/mysql.sock --port 13379 \
+  --binary /absolute/path/to/plus-migrator/target/release/plus-migrate \
+  --validator /absolute/path/to/validate-wired --artifacts /private/path/new-test-results
+```
+
+Do not run other database writers while the safety test compares checksums.

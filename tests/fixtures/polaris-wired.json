@@ -1,0 +1,896 @@
+[
+  {
+    "name": "wf_slc_furni_picks",
+    "source": {
+      "pickedFurniIds": [
+        101
+      ],
+      "filterExisting": true,
+      "invert": false,
+      "delay": 0
+    },
+    "expected": {
+      "PrimaryItems": [
+        {
+          "ItemId": 101,
+          "Wall": false
+        }
+      ],
+      "Filter": true,
+      "Inverse": false
+    }
+  },
+  {
+    "name": "wf_slc_furni_bytype",
+    "source": {
+      "sourceType": 0,
+      "matchState": true,
+      "pickedFurniIds": [
+        101
+      ],
+      "filterExisting": true,
+      "invert": false,
+      "delay": 0
+    },
+    "expected": {
+      "FurniSourceTypes": [
+        100
+      ],
+      "OwnedIntParams": [
+        1
+      ],
+      "PrimaryItems": [
+        {
+          "ItemId": 101,
+          "Wall": false
+        }
+      ],
+      "Filter": true,
+      "Inverse": false
+    }
+  },
+  {
+    "name": "wf_slc_furni_onfurni",
+    "source": {
+      "furniSource": 100,
+      "itemIds": [
+        101
+      ],
+      "selectionType": 1,
+      "filterExisting": true,
+      "invert": false,
+      "delay": 0
+    },
+    "expected": {
+      "FurniSourceTypes": [
+        100
+      ],
+      "OwnedIntParams": [
+        1
+      ],
+      "Filter": true,
+      "Inverse": false
+    }
+  },
+  {
+    "name": "wf_slc_users_onfurni",
+    "source": {
+      "furniSource": 100,
+      "itemIds": [
+        101
+      ],
+      "filterExisting": true,
+      "invert": false,
+      "delay": 0
+    },
+    "expected": {
+      "FurniSourceTypes": [
+        100
+      ],
+      "Filter": true,
+      "Inverse": false
+    }
+  },
+  {
+    "name": "wf_slc_furni_area",
+    "source": {
+      "rootX": 3,
+      "rootY": 4,
+      "width": 2,
+      "height": 5,
+      "filterExisting": true,
+      "invert": false,
+      "delay": 0
+    },
+    "expected": {
+      "OwnedIntParams": [
+        3,
+        4,
+        2,
+        5
+      ],
+      "Filter": true,
+      "Inverse": false
+    }
+  },
+  {
+    "name": "wf_slc_users_area",
+    "source": {
+      "rootX": 3,
+      "rootY": 4,
+      "width": 2,
+      "height": 5,
+      "filterExisting": true,
+      "invert": false,
+      "delay": 0
+    },
+    "expected": {
+      "OwnedIntParams": [
+        3,
+        4,
+        2,
+        5
+      ],
+      "Filter": true,
+      "Inverse": false
+    }
+  },
+  {
+    "name": "wf_slc_furni_altitude",
+    "source": {
+      "altitude": "1.25",
+      "comparison": 1,
+      "filterExisting": true,
+      "invert": false,
+      "delay": 0
+    },
+    "expected": {
+      "OwnedIntParams": [
+        125,
+        1
+      ],
+      "Filter": true,
+      "Inverse": false
+    }
+  },
+  {
+    "name": "wf_slc_furni_signal",
+    "source": {
+      "filterExisting": true,
+      "invert": false,
+      "delay": 0
+    },
+    "expected": {
+      "OwnedIntParams": [],
+      "Filter": true,
+      "Inverse": false
+    }
+  },
+  {
+    "name": "wf_slc_users_signal",
+    "source": {
+      "filterExisting": true,
+      "invert": false,
+      "delay": 0
+    },
+    "expected": {
+      "OwnedIntParams": [],
+      "Filter": true,
+      "Inverse": false
+    }
+  },
+  {
+    "name": "wf_slc_users_byname",
+    "source": {
+      "namesText": "Alice;Bob",
+      "filterExisting": true,
+      "invert": false,
+      "delay": 0
+    },
+    "expected": {
+      "Text": "Alice;Bob",
+      "Filter": true,
+      "Inverse": false
+    },
+    "expected_runtime": {
+      "Text": "Alice;Bob"
+    }
+  },
+  {
+    "name": "wf_slc_users_bytype",
+    "source": {
+      "entityType": 1,
+      "filterExisting": true,
+      "invert": false,
+      "delay": 0
+    },
+    "expected": {
+      "OwnedIntParams": [
+        1
+      ],
+      "Filter": true,
+      "Inverse": false
+    }
+  },
+  {
+    "name": "wf_slc_users_handitem",
+    "source": {
+      "handItemId": 5,
+      "filterExisting": true,
+      "invert": false,
+      "delay": 0
+    },
+    "expected": {
+      "OwnedIntParams": [
+        5
+      ],
+      "Filter": true,
+      "Inverse": false
+    }
+  },
+  {
+    "name": "wf_slc_users_team",
+    "source": {
+      "teamType": 2,
+      "filterExisting": true,
+      "invert": false,
+      "delay": 0
+    },
+    "expected": {
+      "OwnedIntParams": [
+        2
+      ],
+      "Filter": true,
+      "Inverse": false
+    }
+  },
+  {
+    "name": "wf_slc_users_byaction",
+    "source": {
+      "selectedAction": 10,
+      "signFilterEnabled": false,
+      "signId": 0,
+      "danceFilterEnabled": true,
+      "danceId": 3,
+      "filterExisting": true,
+      "invert": false,
+      "delay": 0
+    },
+    "expected": {
+      "OwnedIntParams": [
+        11
+      ],
+      "Text": "dance 3",
+      "Filter": true,
+      "Inverse": false
+    }
+  },
+  {
+    "name": "wf_trg_user_performs_action",
+    "source": {
+      "selectedAction": 10,
+      "signFilterEnabled": false,
+      "signId": 0,
+      "danceFilterEnabled": true,
+      "danceId": 3
+    },
+    "expected": {
+      "OwnedIntParams": [
+        11
+      ],
+      "Text": "dance 3"
+    }
+  },
+  {
+    "name": "wf_cnd_user_performs_action",
+    "source": {
+      "selectedAction": 10,
+      "signFilterEnabled": false,
+      "signId": 0,
+      "danceFilterEnabled": true,
+      "danceId": 3,
+      "userSource": 0,
+      "quantifier": 0
+    },
+    "expected": {
+      "OwnedIntParams": [
+        11
+      ],
+      "Text": "dance 3",
+      "UserSourceTypes": [
+        0
+      ],
+      "Quantifier": 0
+    }
+  },
+  {
+    "name": "wf_cnd_not_user_performs_action",
+    "source": {
+      "selectedAction": 10,
+      "signFilterEnabled": false,
+      "signId": 0,
+      "danceFilterEnabled": true,
+      "danceId": 3,
+      "userSource": 0,
+      "quantifier": 0
+    },
+    "expected": {
+      "OwnedIntParams": [
+        11
+      ],
+      "Text": "dance 3",
+      "UserSourceTypes": [
+        0
+      ],
+      "Quantifier": 0
+    }
+  },
+  {
+    "name": "wf_trg_click_furni",
+    "source": {
+      "furniSource": 100,
+      "itemIds": [
+        101
+      ]
+    },
+    "expected": {
+      "FurniSourceTypes": [
+        100
+      ],
+      "PrimaryItems": [
+        {
+          "ItemId": 101,
+          "Wall": false
+        }
+      ]
+    }
+  },
+  {
+    "name": "wf_trg_click_tile",
+    "source": {
+      "furniSource": 100,
+      "itemIds": [
+        101
+      ]
+    },
+    "expected": {
+      "FurniSourceTypes": [
+        100
+      ],
+      "PrimaryItems": [
+        {
+          "ItemId": 101,
+          "Wall": false
+        }
+      ]
+    }
+  },
+  {
+    "name": "wf_trg_recv_signal",
+    "source": {
+      "furniSource": 100,
+      "itemIds": [
+        101
+      ],
+      "channel": 0
+    },
+    "expected": {
+      "FurniSourceTypes": [
+        100
+      ],
+      "PrimaryItems": [
+        {
+          "ItemId": 101,
+          "Wall": false
+        }
+      ]
+    }
+  },
+  {
+    "name": "wf_trg_click_user",
+    "source": {
+      "blockMenuOpen": true,
+      "doNotRotate": false
+    },
+    "expected": {
+      "OwnedIntParams": [
+        1,
+        0
+      ]
+    }
+  },
+  {
+    "name": "wf_trg_leave_room",
+    "source": {
+      "username": "Alice"
+    },
+    "expected": {
+      "Text": "Alice"
+    },
+    "expected_runtime": {
+      "Text": "Alice"
+    }
+  },
+  {
+    "name": "wf_trg_clock_counter",
+    "source": {
+      "halfSecondSteps": 63,
+      "minutes": 2,
+      "furniSource": 100,
+      "itemIds": [
+        101
+      ]
+    },
+    "expected": {
+      "OwnedIntParams": [
+        31,
+        2,
+        1
+      ]
+    },
+    "expected_runtime": {
+      "IntParams": [
+        2,
+        63,
+        100
+      ],
+      "SelectedItems": [
+        101
+      ]
+    }
+  },
+  {
+    "name": "wf_act_adjust_clock",
+    "source": {
+      "halfSecondSteps": 63,
+      "minutes": 2,
+      "furniSource": 100,
+      "itemIds": [
+        101
+      ],
+      "operator": 1,
+      "delay": 2
+    },
+    "expected": {
+      "OwnedIntParams": [
+        31,
+        2,
+        1,
+        1
+      ],
+      "Delay": 2
+    },
+    "expected_runtime": {
+      "IntParams": [
+        1,
+        100,
+        2,
+        63
+      ],
+      "SelectedItems": [
+        101
+      ],
+      "Delay": 2
+    }
+  },
+  {
+    "name": "wf_act_control_clock",
+    "source": {
+      "action": 1,
+      "furniSource": 100,
+      "itemIds": [
+        101
+      ],
+      "delay": 2
+    },
+    "expected": {
+      "OwnedIntParams": [
+        1
+      ],
+      "Delay": 2
+    }
+  },
+  {
+    "name": "wf_act_set_altitude",
+    "source": {
+      "altitude": "1.25",
+      "operator": 0,
+      "furniSource": 100,
+      "itemIds": [
+        101
+      ],
+      "delay": 2
+    },
+    "expected": {
+      "OwnedIntParams": [
+        125,
+        0
+      ],
+      "Delay": 2
+    }
+  },
+  {
+    "name": "wf_act_send_signal",
+    "source": {
+      "channel": 0,
+      "signalPerFurni": true,
+      "signalPerUser": false,
+      "antennaSource": 100,
+      "furniForward": 101,
+      "userForward": 0,
+      "itemIds": [
+        101
+      ],
+      "forwardItemIds": [
+        102
+      ],
+      "delay": 2
+    },
+    "expected": {
+      "OwnedIntParams": [
+        1,
+        0
+      ],
+      "FurniSourceTypes": [
+        100,
+        101
+      ],
+      "UserSourceTypes": [
+        0
+      ],
+      "PrimaryItems": [
+        {
+          "ItemId": 101,
+          "Wall": false
+        }
+      ],
+      "SecondaryItems": [
+        {
+          "ItemId": 102,
+          "Wall": false
+        }
+      ],
+      "Delay": 2
+    }
+  },
+  {
+    "name": "wf_act_neg_send_signal",
+    "source": {
+      "channel": 0,
+      "signalPerFurni": true,
+      "signalPerUser": false,
+      "antennaSource": 100,
+      "furniForward": 101,
+      "userForward": 0,
+      "itemIds": [
+        101
+      ],
+      "forwardItemIds": [
+        102
+      ],
+      "delay": 2
+    },
+    "expected": {
+      "OwnedIntParams": [
+        1,
+        0
+      ],
+      "FurniSourceTypes": [
+        100,
+        101
+      ],
+      "UserSourceTypes": [
+        0
+      ],
+      "PrimaryItems": [
+        {
+          "ItemId": 101,
+          "Wall": false
+        }
+      ],
+      "SecondaryItems": [
+        {
+          "ItemId": 102,
+          "Wall": false
+        }
+      ],
+      "Delay": 2
+    }
+  },
+  {
+    "name": "wf_act_freeze",
+    "source": {
+      "userSource": 0,
+      "effectId": 53,
+      "cancelOnTeleport": true,
+      "delay": 2
+    },
+    "expected": {
+      "OwnedIntParams": [
+        3,
+        1
+      ],
+      "UserSourceTypes": [
+        0
+      ],
+      "Delay": 2
+    }
+  },
+  {
+    "name": "wf_act_unfreeze",
+    "source": {
+      "userSource": 0,
+      "delay": 2
+    },
+    "expected": {
+      "UserSourceTypes": [
+        0
+      ],
+      "Delay": 2
+    }
+  },
+  {
+    "name": "wf_act_furni_to_furni",
+    "source": {
+      "moveSource": 100,
+      "targetSource": 101,
+      "itemIds": [
+        101
+      ],
+      "targetItemIds": [
+        102
+      ],
+      "delay": 2
+    },
+    "expected": {
+      "FurniSourceTypes": [
+        100,
+        101
+      ],
+      "PrimaryItems": [
+        {
+          "ItemId": 101,
+          "Wall": false
+        }
+      ],
+      "SecondaryItems": [
+        {
+          "ItemId": 102,
+          "Wall": false
+        }
+      ],
+      "Delay": 2
+    },
+    "expected_runtime": {
+      "IntParams": [
+        100,
+        101
+      ],
+      "SelectedItems": [
+        101
+      ],
+      "SecondarySelectedItems": [
+        102
+      ],
+      "Text": "102"
+    }
+  },
+  {
+    "name": "wf_act_user_to_furni",
+    "source": {
+      "walkMode": 1,
+      "furniSource": 100,
+      "userSource": 0,
+      "itemIds": [
+        101
+      ],
+      "delay": 2
+    },
+    "expected": {
+      "OwnedIntParams": [
+        1
+      ],
+      "FurniSourceTypes": [
+        100
+      ],
+      "UserSourceTypes": [
+        0
+      ],
+      "Delay": 2
+    }
+  },
+  {
+    "name": "wf_xtra_anim_time",
+    "source": {
+      "durationMs": 500
+    },
+    "expected": {
+      "OwnedIntParams": [
+        500
+      ]
+    }
+  },
+  {
+    "name": "wf_xtra_execution_limit",
+    "source": {
+      "maxExecutions": 3,
+      "timeWindowMs": 1500
+    },
+    "expected": {
+      "OwnedIntParams": [
+        3,
+        3
+      ]
+    }
+  },
+  {
+    "name": "wf_xtra_mov_carry_users",
+    "source": {
+      "carryMode": 1,
+      "userSource": 0
+    },
+    "expected": {
+      "OwnedIntParams": [
+        1
+      ],
+      "UserSourceTypes": [
+        0
+      ]
+    }
+  },
+  {
+    "name": "wf_xtra_mov_no_animation",
+    "source": {},
+    "expected": {
+      "OwnedIntParams": []
+    }
+  },
+  {
+    "name": "wf_xtra_exec_in_order",
+    "source": {},
+    "expected": {
+      "OwnedIntParams": []
+    }
+  },
+  {
+    "name": "wf_cnd_valid_moves",
+    "source": {},
+    "expected": {
+      "OwnedIntParams": []
+    }
+  },
+  {
+    "name": "wf_cnd_actor_dir",
+    "source": {
+      "directionMask": 5,
+      "userSource": 0,
+      "quantifier": 0
+    },
+    "expected": {
+      "OwnedIntParams": [
+        5
+      ],
+      "Quantifier": 0
+    }
+  },
+  {
+    "name": "wf_cnd_has_altitude",
+    "source": {
+      "altitude": "2.50",
+      "comparison": 1,
+      "furniSource": 100,
+      "quantifier": 0,
+      "itemIds": [
+        101
+      ]
+    },
+    "expected": {
+      "OwnedIntParams": [
+        250,
+        1
+      ],
+      "PrimaryItems": [
+        {
+          "ItemId": 101,
+          "Wall": false
+        }
+      ]
+    }
+  },
+  {
+    "name": "wf_cnd_team_has_rank",
+    "source": {
+      "teamType": 1,
+      "placement": 2,
+      "userSource": 0,
+      "quantifier": 0
+    },
+    "expected": {
+      "OwnedIntParams": [
+        1,
+        2
+      ]
+    }
+  },
+  {
+    "name": "wf_cnd_team_has_score",
+    "source": {
+      "teamType": 1,
+      "score": 10,
+      "comparison": 1,
+      "userSource": 0,
+      "quantifier": 0
+    },
+    "expected": {
+      "OwnedIntParams": [
+        1,
+        10,
+        1
+      ]
+    }
+  },
+  {
+    "name": "wf_cnd_stuff_is",
+    "source": {
+      "furniSource": 100,
+      "compareFurniSource": 101,
+      "quantifier": 0,
+      "primaryItemIds": [
+        101
+      ],
+      "secondaryItemIds": [
+        102
+      ]
+    },
+    "expected": {
+      "FurniSourceTypes": [
+        100,
+        101
+      ],
+      "PrimaryItems": [
+        {
+          "ItemId": 101,
+          "Wall": false
+        }
+      ],
+      "SecondaryItems": [
+        {
+          "ItemId": 102,
+          "Wall": false
+        }
+      ]
+    }
+  },
+  {
+    "name": "wf_cnd_not_stuff_is",
+    "source": {
+      "furniSource": 100,
+      "compareFurniSource": 101,
+      "quantifier": 0,
+      "primaryItemIds": [
+        101
+      ],
+      "secondaryItemIds": [
+        102
+      ]
+    },
+    "expected": {
+      "FurniSourceTypes": [
+        100,
+        101
+      ],
+      "PrimaryItems": [
+        {
+          "ItemId": 101,
+          "Wall": false
+        }
+      ],
+      "SecondaryItems": [
+        {
+          "ItemId": 102,
+          "Wall": false
+        }
+      ]
+    }
+  }
+]

@@ -1,1 +1,5 @@
 target
+
+/tests/PlusContract/bin/
+/tests/PlusContract/obj/
+/migration-report.json

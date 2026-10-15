@@ -10,12 +10,49 @@ use crate::context::Ctx;
 use crate::db::{RowStream, b, f, i, null, query_rows, s};
 
 const COLUMNS: &[&str] = &[
-    "id", "item_name", "public_name", "type", "width", "length", "stack_height", "can_stack", "can_sit",
-    "is_walkable", "sprite_id", "allow_recycle", "allow_trade", "allow_marketplace_sell", "allow_gift",
-    "allow_inventory_stack", "interaction_type", "behaviour_data", "interaction_modes_count", "vending_ids",
-    "height_adjustable", "effect_id", "wired_id", "is_rare", "extra_rot", "custom_params", "has_furnidata",
-    "revision", "category", "default_dir", "xdim", "ydim", "part_colors", "name", "description", "ad_url",
-    "excluded_dynamic", "special_type", "can_stand_on", "can_sit_on", "can_lay_on", "furni_line", "environment",
+    "id",
+    "item_name",
+    "public_name",
+    "type",
+    "width",
+    "length",
+    "stack_height",
+    "can_stack",
+    "can_sit",
+    "is_walkable",
+    "sprite_id",
+    "allow_recycle",
+    "allow_trade",
+    "allow_marketplace_sell",
+    "allow_gift",
+    "allow_inventory_stack",
+    "interaction_type",
+    "behaviour_data",
+    "interaction_modes_count",
+    "vending_ids",
+    "height_adjustable",
+    "effect_id",
+    "wired_id",
+    "is_rare",
+    "extra_rot",
+    "custom_params",
+    "has_furnidata",
+    "revision",
+    "category",
+    "default_dir",
+    "xdim",
+    "ydim",
+    "part_colors",
+    "name",
+    "description",
+    "ad_url",
+    "excluded_dynamic",
+    "special_type",
+    "can_stand_on",
+    "can_sit_on",
+    "can_lay_on",
+    "furni_line",
+    "environment",
     "rare",
 ];
 
@@ -24,7 +61,9 @@ pub async fn run(ctx: Arc<Ctx>) -> Result<()> {
     let furnidata = match &ctx.furnidata {
         Some(path) => load_furnidata(path)?,
         None => {
-            ctx.note("no --furnidata given: Plus will not serve furnidata for imported furni; keep serving the hotel's own FurnitureData.json");
+            println!(
+                "  No --furnidata: retain the source hotel furniture assets and FurnitureData.json."
+            );
             HashMap::new()
         }
     };
@@ -44,16 +83,24 @@ pub async fn run(ctx: Arc<Ctx>) -> Result<()> {
     let mut fell_back: HashMap<String, usize> = HashMap::new();
     let mut rows = RowStream::open(&ctx.src, "SELECT * FROM items_base ORDER BY id").await?;
     while let Some(r) = rows.next().await? {
-        let Some(def) = maps.furni(r.i64("id")) else { continue };
+        let Some(def) = maps.furni(r.i64("id")) else {
+            continue;
+        };
         let mut interaction = def.interaction.clone();
         if interaction == "default" && def.wired_box.is_none() {
-            if r.bool("allow_lay") {
+            if r.bool("allow_lay") && !def.fell_back {
                 interaction = "bed".into();
             } else if def.fell_back {
                 *fell_back.entry(def.src_interaction.clone()).or_default() += 1;
             }
         }
 
+        if r.i64("effect_id_male") != r.i64("effect_id_female") {
+            ctx.note(format!(
+                "Furniture {} has different male/female effects; Plus exposes a single effect id",
+                r.i64("id")
+            ));
+        }
         let fd = furnidata.get(&(def.kind.clone(), def.sprite_id));
         let class_key = def.item_name.to_lowercase();
         let has_fd = fd.is_some()
@@ -65,8 +112,13 @@ pub async fn run(ctx: Arc<Ctx>) -> Result<()> {
             seen_class.insert(class_key.clone());
         }
         let fd = if has_fd { fd } else { None };
-        let fs = |k: &str| fd.and_then(|e| e.get(k)).map(json_str).map(s).unwrap_or(null());
-        let fi = |k: &str, d: i64| fd.and_then(|e| e.get(k)).map(|v| json_i64(v)).unwrap_or(d);
+        let fs = |k: &str| {
+            fd.and_then(|e| e.get(k))
+                .map(json_str)
+                .map(s)
+                .unwrap_or(null())
+        };
+        let fi = |k: &str, d: i64| fd.and_then(|e| e.get(k)).map(json_i64).unwrap_or(d);
 
         let custom_params = if interaction == "purchasable_clothing" {
             clothing.get(&class_key).cloned().map(s).unwrap_or(null())
@@ -130,9 +182,9 @@ pub async fn run(ctx: Arc<Ctx>) -> Result<()> {
 
     if !fell_back.is_empty() {
         let mut list: Vec<_> = fell_back.into_iter().collect();
-        list.sort_by(|a, b| b.1.cmp(&a.1));
+        list.sort_by(|a, b| b.1.cmp(&a.1).then_with(|| a.0.cmp(&b.0)));
         let names: Vec<String> = list.iter().map(|(k, n)| format!("{k} ({n})")).collect();
-        ctx.note(format!("interaction types Plus has no behaviour for, now plain furni: {}", names.join(", ")));
+        ctx.note(format!("interaction types without a verified behavior adapter (blocked; plain furniture only in diagnostic rehearsal): {}", names.join(", ")));
     }
     Ok(())
 }
@@ -144,9 +196,19 @@ fn number_list(raw: &str, ints: bool) -> String {
         .split([';', ','])
         .map(str::trim)
         .filter(|p| !p.is_empty())
-        .filter(|p| if ints { p.parse::<i64>().is_ok() } else { p.parse::<f64>().is_ok() })
+        .filter(|p| {
+            if ints {
+                p.parse::<i64>().is_ok()
+            } else {
+                p.parse::<f64>().is_ok()
+            }
+        })
         .collect();
-    if parts.is_empty() || parts == ["0"] { "0".into() } else { parts.join(",") }
+    if parts.is_empty() || parts == ["0"] {
+        "0".into()
+    } else {
+        parts.join(",")
+    }
 }
 
 fn json_str(v: &Json) -> String {
@@ -172,7 +234,10 @@ fn load_furnidata(path: &std::path::Path) -> Result<HashMap<(String, i64), Json>
     let doc: Json = serde_json::from_slice(&raw).context("FurnitureData.json is not valid JSON")?;
     let mut out = HashMap::new();
     for (section, kind) in [("roomitemtypes", "s"), ("wallitemtypes", "i")] {
-        if let Some(list) = doc.pointer(&format!("/{section}/furnitype")).and_then(Json::as_array) {
+        if let Some(list) = doc
+            .pointer(&format!("/{section}/furnitype"))
+            .and_then(Json::as_array)
+        {
             for e in list {
                 let id = e.get("id").map(json_i64).unwrap_or(0);
                 out.insert((kind.to_string(), id), e.clone());
@@ -181,4 +246,3 @@ fn load_furnidata(path: &std::path::Path) -> Result<HashMap<(String, i64), Json>
     }
     Ok(out)
 }
-

@@ -131,3 +131,7 @@ python3 tests/safety.py --socket /path/to/isolated/mysql.sock --port 13379 \
 ```
 
 Do not run other database writers while the safety test compares checksums.
+
+## Licence
+
+Licensed under the GNU General Public License, version 3 only (`GPL-3.0-only`). See [LICENSE](LICENSE).
